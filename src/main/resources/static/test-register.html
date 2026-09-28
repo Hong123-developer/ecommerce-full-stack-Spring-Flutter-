@@ -1,0 +1,481 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>E-Commerce Auth & Email Verification Tester</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap"
+    rel="stylesheet">
+  <style>
+    :root {
+      --bg: #0f172a;
+      --card-bg: rgba(30, 41, 59, 0.7);
+      --border: rgba(148, 163, 184, 0.15);
+      --primary: #4f46e5;
+      --primary-hover: #4338ca;
+      --accent: #06b6d4;
+      --success: #10b981;
+      --error: #ef4444;
+      --text: #f8fafc;
+      --text-muted: #94a3b8;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      background: radial-gradient(circle at 10% 20%, #1e1b4b 0%, #0f172a 100%);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 40px 20px;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 680px;
+    }
+
+    .header {
+      text-align: center;
+      margin-bottom: 32px;
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 4px 12px;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--accent);
+      background: rgba(6, 182, 212, 0.12);
+      border-radius: 999px;
+      border: 1px solid rgba(6, 182, 212, 0.25);
+      margin-bottom: 12px;
+    }
+
+    h1 {
+      font-size: 28px;
+      font-weight: 700;
+      background: linear-gradient(135deg, #fff 0%, #cbd5e1 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin-bottom: 8px;
+    }
+
+    p.subtitle {
+      color: var(--text-muted);
+      font-size: 14px;
+    }
+
+    .card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      backdrop-filter: blur(16px);
+      border-radius: 16px;
+      padding: 24px;
+      margin-bottom: 24px;
+      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3), 0 8px 10px -6px rgba(0, 0, 0, 0.2);
+    }
+
+    .card-title {
+      font-size: 17px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 18px;
+    }
+
+    .step-number {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 26px;
+      height: 26px;
+      border-radius: 8px;
+      background: var(--primary);
+      color: #fff;
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .form-group {
+      margin-bottom: 14px;
+    }
+
+    label {
+      display: block;
+      font-size: 13px;
+      font-weight: 500;
+      color: #cbd5e1;
+      margin-bottom: 6px;
+    }
+
+    input {
+      width: 100%;
+      padding: 10px 14px;
+      background: rgba(15, 23, 42, 0.6);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: #fff;
+      font-size: 14px;
+      outline: none;
+      transition: all 0.2s;
+    }
+
+    input:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(6, 182, 212, 0.2);
+    }
+
+    .btn {
+      width: 100%;
+      padding: 11px 16px;
+      font-size: 14px;
+      font-weight: 600;
+      color: #fff;
+      background: var(--primary);
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 8px;
+      margin-top: 10px;
+    }
+
+    .btn:hover {
+      background: var(--primary-hover);
+      transform: translateY(-1px);
+    }
+
+    .btn:active {
+      transform: translateY(0);
+    }
+
+    .btn-secondary {
+      background: rgba(148, 163, 184, 0.15);
+      border: 1px solid var(--border);
+      margin-top: 8px;
+    }
+
+    .btn-secondary:hover {
+      background: rgba(148, 163, 184, 0.25);
+    }
+
+    .btn:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .alert {
+      padding: 12px 14px;
+      border-radius: 8px;
+      font-size: 13px;
+      margin-top: 14px;
+      display: none;
+      word-break: break-all;
+    }
+
+    .alert-success {
+      background: rgba(16, 185, 129, 0.15);
+      border: 1px solid rgba(16, 185, 129, 0.3);
+      color: #6ee7b7;
+    }
+
+    .alert-error {
+      background: rgba(239, 68, 68, 0.15);
+      border: 1px solid rgba(239, 68, 68, 0.3);
+      color: #fca5a5;
+    }
+
+    .otp-input {
+      letter-spacing: 12px;
+      font-size: 24px;
+      font-weight: 700;
+      text-align: center;
+    }
+
+    pre {
+      background: rgba(0, 0, 0, 0.3);
+      padding: 10px;
+      border-radius: 6px;
+      font-size: 12px;
+      overflow-x: auto;
+      margin-top: 8px;
+      color: #93c5fd;
+    }
+  </style>
+</head>
+
+<body>
+
+  <div class="container">
+    <div class="header">
+      <span class="badge">Chrome Testing Dashboard</span>
+      <h1>E-Commerce Registration Test</h1>
+      <p class="subtitle">Test User Registration, Email Verification (OTP), and Login directly in Chrome</p>
+    </div>
+
+    <!-- Social Login / Register (OAuth2) -->
+    <div class="card" style="border: 1px solid rgba(99, 102, 241, 0.4); background: rgba(30, 41, 59, 0.9);">
+      <div class="card-title">
+        <span class="step-number" style="background: linear-gradient(135deg, #1877f2, #4f46e5);">🚀</span>
+        <span>Instant Social Login / Register (OAuth2)</span>
+      </div>
+      <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 14px;">
+        Register or Sign In with 1-click. No email verification code required!
+      </p>
+      <div style="display: flex; gap: 12px; flex-wrap: wrap;">
+        <a href="/oauth2/authorization/facebook" class="btn" style="flex: 1; min-width: 200px; background: #1877f2; text-decoration: none; display: flex; align-items: center; justify-content: center; gap: 8px;">
+          <svg width="20" height="20" fill="currentColor" viewBox="0 0 24 24"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>
+          <span>Continue with Facebook</span>
+        </a>
+        <a href="/oauth2/authorization/google" class="btn" style="flex: 1; min-width: 200px; background: #ea4335; text-decoration: none; display: flex; align-items: center; justify-content: center; gap: 8px;">
+          <svg width="20" height="20" fill="currentColor" viewBox="0 0 24 24"><path d="M12.48 10.92v3.28h7.84c-.24 1.84-.853 3.187-1.787 4.133-1.147 1.147-2.933 2.4-6.053 2.4-4.827 0-8.6-3.893-8.6-8.72s3.773-8.72 8.6-8.72c2.6 0 4.507 1.027 5.907 2.347l2.307-2.307C18.747 1.44 16.133 0 12.48 0 5.867 0 .307 5.387.307 12s5.56 12 12.173 12c3.573 0 6.267-1.173 8.373-3.36 2.16-2.16 2.84-5.213 2.84-7.667 0-.76-.053-1.467-.173-2.053H12.48z"/></svg>
+          <span>Continue with Google</span>
+        </a>
+      </div>
+    </div>
+
+    <!-- Step 1: Register -->
+    <div class="card">
+      <div class="card-title">
+        <span class="step-number">1</span>
+        <span>Register New Account</span>
+      </div>
+      <form id="registerForm">
+        <div class="form-group">
+          <label for="fullName">Full Name</label>
+          <input type="text" id="fullName" value="Prol Menghong" required>
+        </div>
+        <div class="form-group">
+          <label for="regEmail">Email Address</label>
+          <input type="email" id="regEmail" value="prolmenghong8@gmail.com" required>
+        </div>
+        <div class="form-group">
+          <label for="regPhone">Phone (Optional)</label>
+          <input type="text" id="regPhone" value="012345678">
+        </div>
+        <div class="form-group">
+          <label for="regPassword">Password (Min 8 chars, 1 letter, 1 number)</label>
+          <input type="password" id="regPassword" value="Password123" required>
+        </div>
+        <button type="submit" class="btn" id="btnRegister">
+          <span>Register & Send Verification Code</span>
+        </button>
+      </form>
+      <div id="registerAlert" class="alert"></div>
+    </div>
+
+    <!-- Step 2: Verify Email -->
+    <div class="card">
+      <div class="card-title">
+        <span class="step-number">2</span>
+        <span>Verify Email (OTP Code)</span>
+      </div>
+      <form id="verifyForm">
+        <div class="form-group">
+          <label for="verifyEmail">Email</label>
+          <input type="email" id="verifyEmail" value="prolmenghong8@gmail.com" required>
+        </div>
+        <div class="form-group">
+          <label for="verifyCode">6-Digit Verification Code</label>
+          <input type="text" id="verifyCode" class="otp-input" maxlength="6" placeholder="------" required>
+        </div>
+        <button type="submit" class="btn" id="btnVerify">
+          <span>Verify Email</span>
+        </button>
+        <button type="button" class="btn btn-secondary" id="btnResend">
+          <span>Resend Code</span>
+        </button>
+      </form>
+      <div id="verifyAlert" class="alert"></div>
+    </div>
+
+    <!-- Step 3: Login -->
+    <div class="card">
+      <div class="card-title">
+        <span class="step-number">3</span>
+        <span>Login Test</span>
+      </div>
+      <form id="loginForm">
+        <div class="form-group">
+          <label for="loginEmail">Email</label>
+          <input type="email" id="loginEmail" value="prolmenghong8@gmail.com" required>
+        </div>
+        <div class="form-group">
+          <label for="loginPassword">Password</label>
+          <input type="password" id="loginPassword" value="Password123" required>
+        </div>
+        <button type="submit" class="btn" id="btnLogin">
+          <span>Sign In</span>
+        </button>
+      </form>
+      <div id="loginAlert" class="alert"></div>
+    </div>
+  </div>
+
+  <script>
+    const API_BASE = '/api/v1/auth';
+
+    function showAlert(elementId, message, isSuccess, data = null) {
+      const el = document.getElementById(elementId);
+      el.style.display = 'block';
+      el.className = 'alert ' + (isSuccess ? 'alert-success' : 'alert-error');
+
+      let html = '<strong>' + (isSuccess ? '✅ Success: ' : '❌ Error: ') + '</strong> ' + message;
+      if (data) {
+        html += '<pre>' + JSON.stringify(data, null, 2) + '</pre>';
+      }
+      el.innerHTML = html;
+    }
+
+    // Step 1: Register
+    document.getElementById('registerForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const btn = document.getElementById('btnRegister');
+      btn.disabled = true;
+      btn.innerText = 'Registering & Sending Email...';
+
+      const email = document.getElementById('regEmail').value.trim();
+      const body = {
+        fullName: document.getElementById('fullName').value.trim(),
+        email: email,
+        phone: document.getElementById('regPhone').value.trim(),
+        password: document.getElementById('regPassword').value
+      };
+
+      try {
+        const res = await fetch(API_BASE + '/register', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body)
+        });
+        const data = await res.json();
+        if (res.ok) {
+          showAlert('registerAlert', data.message || 'Account created! Please check your Gmail or Terminal for OTP code.', true);
+          document.getElementById('verifyEmail').value = email;
+          document.getElementById('loginEmail').value = email;
+          document.getElementById('verifyCode').focus();
+        } else {
+          showAlert('registerAlert', data.message || 'Registration failed', false, data);
+        }
+      } catch (err) {
+        showAlert('registerAlert', 'Network or Server error: ' + err.message, false);
+      } finally {
+        btn.disabled = false;
+        btn.innerText = 'Register & Send Verification Code';
+      }
+    });
+
+    // Step 2: Verify Code
+    document.getElementById('verifyForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const btn = document.getElementById('btnVerify');
+      btn.disabled = true;
+      btn.innerText = 'Verifying...';
+
+      const body = {
+        email: document.getElementById('verifyEmail').value.trim(),
+        code: document.getElementById('verifyCode').value.trim()
+      };
+
+      try {
+        const res = await fetch(API_BASE + '/verify-email', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body)
+        });
+        const data = await res.json();
+        if (res.ok) {
+          showAlert('verifyAlert', data.message || 'Email verified successfully! You can now sign in.', true);
+        } else {
+          showAlert('verifyAlert', data.message || 'Verification failed', false, data);
+        }
+      } catch (err) {
+        showAlert('verifyAlert', 'Network or Server error: ' + err.message, false);
+      } finally {
+        btn.disabled = false;
+        btn.innerText = 'Verify Email';
+      }
+    });
+
+    // Resend Code
+    document.getElementById('btnResend').addEventListener('click', async () => {
+      const email = document.getElementById('verifyEmail').value.trim();
+      if (!email) {
+        alert('Please enter your email.');
+        return;
+      }
+      const btn = document.getElementById('btnResend');
+      btn.disabled = true;
+      btn.innerText = 'Resending...';
+
+      try {
+        const res = await fetch(API_BASE + '/resend-code', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email })
+        });
+        const data = await res.json();
+        if (res.ok) {
+          showAlert('verifyAlert', data.message || 'A new code has been sent.', true);
+        } else {
+          showAlert('verifyAlert', data.message || 'Resend failed', false, data);
+        }
+      } catch (err) {
+        showAlert('verifyAlert', 'Network or Server error: ' + err.message, false);
+      } finally {
+        btn.disabled = false;
+        btn.innerText = 'Resend Code';
+      }
+    });
+
+    // Step 3: Login
+    document.getElementById('loginForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const btn = document.getElementById('btnLogin');
+      btn.disabled = true;
+      btn.innerText = 'Signing in...';
+
+      const body = {
+        email: document.getElementById('loginEmail').value.trim(),
+        password: document.getElementById('loginPassword').value
+      };
+
+      try {
+        const res = await fetch(API_BASE + '/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body)
+        });
+        const data = await res.json();
+        if (res.ok) {
+          showAlert('loginAlert', 'Login successful!', true, data.data);
+        } else {
+          showAlert('loginAlert', data.message || 'Login failed', false, data);
+        }
+      } catch (err) {
+        showAlert('loginAlert', 'Network or Server error: ' + err.message, false);
+      } finally {
+        btn.disabled = false;
+        btn.innerText = 'Sign In';
+      }
+    });
+  </script>
+</body>
+
+</html>
