@@ -16,6 +16,12 @@ public class PaymentMapper {
 
     public PaymentResponse toResponse(Payment payment, boolean includeCustomer,
                                       PaymentResponse.Khqr khqr) {
+        return toResponse(payment, includeCustomer, khqr, null);
+    }
+
+    public PaymentResponse toResponse(Payment payment, boolean includeCustomer,
+                                      PaymentResponse.Khqr khqr,
+                                      PaymentResponse.CardCheckout cardCheckout) {
         return new PaymentResponse(
                 payment.getId(),
                 payment.getOrder().getId(),
@@ -25,7 +31,12 @@ public class PaymentMapper {
                 payment.getPaymentMethod(),
                 payment.getPaymentStatus(),
                 payment.getTransactionId(),
+                payment.getGatewayProvider(),
+                payment.getGatewayTranId(),
+                payment.getGatewayApprovalCode(),
+                payment.getCardMasked(),
                 khqr,
+                cardCheckout,
                 payment.getPaidAt(),
                 includeCustomer ? toCustomer(payment.getUser()) : null,
                 payment.getCreatedAt());

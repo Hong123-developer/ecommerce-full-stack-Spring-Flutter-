@@ -1,8 +1,10 @@
 package com.ecomerceshopeonline.ecomercewepapp.dto.request;
 
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.*;
 
 import java.math.BigDecimal;
+import java.util.List;
 
 public record ProductRequest(
 
@@ -31,7 +33,44 @@ public record ProductRequest(
         @Size(max = 500, message = "Image URL must be at most 500 characters")
         String imageUrl,
 
+        /** Extra photos after the main image. Null on update means "unchanged"; [] clears them. */
+        @Size(max = ProductRequest.MAX_GALLERY, message = "A product can have at most 8 extra images")
+        List<
+                @NotBlank(message = "Gallery image URL cannot be blank")
+                @Size(max = 500, message = "Gallery image URL must be at most 500 characters")
+                @Pattern(regexp = ProductRequest.URL_PATTERN, message = "Gallery image URL must start with / or http(s)://")
+                String> galleryUrls,
+
         /** Null on create means "enabled". */
-        Boolean enabled
+        Boolean enabled,
+
+        /**
+         * Option names such as [Model, Storage, Color]. Null on update means "unchanged".
+         * Uniqueness (ignoring case) is checked by the service.
+         */
+        @Size(max = ProductRequest.MAX_OPTION_NAMES, message = "A product can have at most 3 options")
+        List<
+                @NotBlank(message = "Option name cannot be blank")
+                @Size(max = 30, message = "Option name must be at most 30 characters")
+                String> optionNames,
+
+        /**
+         * Buyable combinations. Null on update means "unchanged"; [] removes them all. When
+         * present, the product price and stock are derived from the enabled variants and the
+         * top-level price / stockQuantity are ignored.
+         */
+        @Size(max = ProductRequest.MAX_VARIANTS, message = "A product can have at most 100 variants")
+        List<@NotNull(message = "Variant cannot be null") @Valid VariantRequest> variants
 ) {
+
+    public static final int MAX_GALLERY = 8;
+    public static final int MAX_OPTION_NAMES = 3;
+    public static final int MAX_VARIANTS = 100;
+
+    /**
+     * An in-app path (not "//host" or "/\\host") or an absolute http(s) URL. Leading
+     * spaces are allowed because the mapper trims each URL before storing it.
+     */
+    public static final String URL_PATTERN = "^\\s*(/(?![/\\\\])|https?://).+";
+
 }

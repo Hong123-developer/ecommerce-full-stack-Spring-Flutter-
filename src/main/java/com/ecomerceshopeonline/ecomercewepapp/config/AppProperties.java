@@ -2,6 +2,8 @@ package com.ecomerceshopeonline.ecomercewepapp.config;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
+import org.springframework.util.unit.DataSize;
+
 import java.math.BigDecimal;
 import java.util.List;
 
@@ -17,7 +19,9 @@ public record AppProperties(
         Cors cors,
         Admin admin,
         Order order,
-        Bakong bakong
+        Bakong bakong,
+        Upload upload,
+        Payway payway
 ) {
 
     public record Jwt(
@@ -73,6 +77,50 @@ public record AppProperties(
 
         public boolean canQueryApi() {
             return token != null && !token.isBlank();
+        }
+    }
+
+    /**
+     * Where uploaded images are written, and the largest single image accepted.
+     * Files are served back under {@code /uploads/**}.
+     */
+    public record Upload(String dir, DataSize maxImageSize) {
+    }
+
+    /**
+     * Card payments through ABA PayWay's hosted checkout (https://developer.payway.com.kh).
+     * Card stays switched off - hidden at checkout and refused by the API - while
+     * {@code merchant-id} or {@code api-key} is blank.
+     *
+     * @param baseUrl         {@code https://checkout-sandbox.payway.com.kh} or, live,
+     *                        {@code https://checkout.payway.com.kh}
+     * @param merchantId      merchant id from the PayWay welcome e-mail
+     * @param apiKey          API key (HMAC secret) - server side only, never sent to a browser
+     * @param callbackUrl     public https URL of {@code POST /api/v1/payments/payway/callback};
+     *                        blank = no pushback, the payment page's polling settles instead
+     * @param frontendUrl     where the shopper's browser returns to after paying
+     * @param lifetimeMinutes how long one card attempt stays payable (PayWay minimum: 3)
+     */
+    public record Payway(
+            String baseUrl,
+            String merchantId,
+            String apiKey,
+            String callbackUrl,
+            String frontendUrl,
+            int lifetimeMinutes
+    ) {
+        public boolean isConfigured() {
+            return merchantId != null && !merchantId.isBlank()
+                    && apiKey != null && !apiKey.isBlank();
+        }
+
+        /** The generated toString would print the API key into any log that dumps the config. */
+        @Override
+        public String toString() {
+            return "Payway[baseUrl=" + baseUrl + ", merchantId=" + merchantId
+                    + ", apiKey=" + (apiKey == null || apiKey.isBlank() ? "<blank>" : "<set>")
+                    + ", callbackUrl=" + callbackUrl + ", frontendUrl=" + frontendUrl
+                    + ", lifetimeMinutes=" + lifetimeMinutes + "]";
         }
     }
 }

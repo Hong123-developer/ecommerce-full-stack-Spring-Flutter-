@@ -11,6 +11,9 @@ public record AddressResponse(
         String commune,
         String village,
         String addressDetail,
+        /** Map pin; both null when the address has none. */
+        Double latitude,
+        Double longitude,
         boolean isDefault,
         /** Flattened one-line form, the same text snapshotted onto an order. */
         String fullAddress,

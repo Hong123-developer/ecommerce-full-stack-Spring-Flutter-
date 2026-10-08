@@ -29,7 +29,7 @@ public class SmtpEmailService implements EmailService {
     public void sendVerificationCode(String to, String fullName, String code,
                                      VerificationPurpose purpose, int validMinutes) {
         log.info("========================================================================");
-        log.info("📧 [OTP CODE] Purpose: {}, To: {}, CODE = {}", purpose, to, code);
+        log.info("[OTP CODE] Purpose: {}, To: {}, CODE = {}", purpose, to, code);
         log.info("========================================================================");
         String subject = switch (purpose) {
             case EMAIL_VERIFICATION -> "Verify your email address";
@@ -70,7 +70,7 @@ public class SmtpEmailService implements EmailService {
 
     private void send(String to, String subject, String html) {
         if (mailUsername == null || mailUsername.isBlank()) {
-            log.warn("⚠️ [DEV MODE] spring.mail.username is not configured. Email '{}' was logged to console and not sent over network.", subject);
+            log.warn(" [DEV MODE] spring.mail.username is not configured. Email '{}' was logged to console and not sent over network.", subject);
             return;
         }
 

@@ -18,6 +18,8 @@ public class AddressMapper {
                 address.getCommune(),
                 address.getVillage(),
                 address.getAddressDetail(),
+                address.getLatitude(),
+                address.getLongitude(),
                 address.isDefault(),
                 address.toSingleLine(),
                 address.getCreatedAt(),
@@ -38,5 +40,7 @@ public class AddressMapper {
         target.setCommune(request.commune());
         target.setVillage(request.village());
         target.setAddressDetail(request.addressDetail());
+        target.setLatitude(request.latitude());
+        target.setLongitude(request.longitude());
     }
 }

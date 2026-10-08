@@ -27,4 +27,9 @@ public interface AddressRepository extends JpaRepository<Address, Long> {
     @Modifying
     @Query("UPDATE Address a SET a.isDefault = false WHERE a.user.id = :userId")
     void clearDefaults(@Param("userId") Long userId);
+
+    /** Account deletion - removes the user's saved addresses. */
+    @Modifying(flushAutomatically = true)
+    @Query("DELETE FROM Address a WHERE a.user.id = :userId")
+    int bulkDeleteByUserId(@Param("userId") Long userId);
 }

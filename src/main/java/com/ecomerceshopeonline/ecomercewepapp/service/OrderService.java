@@ -18,6 +18,13 @@ public interface OrderService {
 
     OrderResponse cancelOwn(Long userId, Long orderId);
 
+    /**
+     * Releases an order whose card payment window ran out: stock goes back, the order is
+     * CANCELLED and the payment EXPIRED. Does nothing (returns false) unless the order is
+     * still PENDING and its payment unpaid. Called by the payment flow, not by a controller.
+     */
+    boolean expireUnpaidOrder(Long orderId);
+
     // --- admin ---
 
     PageResponse<OrderSummaryResponse> adminList(OrderStatus status, String search, Pageable pageable);

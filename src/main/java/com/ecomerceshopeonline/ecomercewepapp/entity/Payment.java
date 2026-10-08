@@ -15,7 +15,10 @@ import java.time.LocalDateTime;
 @Entity
 @Table(
         name = "payments",
-        uniqueConstraints = @UniqueConstraint(name = "uk_payments_transaction", columnNames = "transaction_id"),
+        uniqueConstraints = {
+                @UniqueConstraint(name = "uk_payments_transaction", columnNames = "transaction_id"),
+                @UniqueConstraint(name = "uk_payments_gateway_tran", columnNames = "gateway_tran_id")
+        },
         indexes = {
                 @Index(name = "idx_payments_order", columnList = "order_id"),
                 @Index(name = "idx_payments_user", columnList = "user_id"),
@@ -74,6 +77,26 @@ public class Payment extends BaseEntity {
 
     @Column(name = "paid_at")
     private LocalDateTime paidAt;
+
+    // ---- card payments through a hosted payment page (e.g. ABA PayWay). All null for other
+    // methods and for payments made before card existed. Card numbers, CVV and expiry never
+    // reach this server - the provider's page collects them.
+
+    /** Display name of the card provider, e.g. "ABA PayWay". */
+    @Column(name = "gateway_provider", length = 20)
+    private String gatewayProvider;
+
+    /** Our id of the latest attempt at the provider; every new attempt gets a fresh one. */
+    @Column(name = "gateway_tran_id", length = 40)
+    private String gatewayTranId;
+
+    /** Approval code ("apv") of the authorisation, once paid. */
+    @Column(name = "gateway_approval_code", length = 40)
+    private String gatewayApprovalCode;
+
+    /** Brand and last four digits only, e.g. "VISA •••• 4242" - never the full number. */
+    @Column(name = "card_masked", length = 40)
+    private String cardMasked;
 
     public boolean isSettled() {
         return paymentStatus == PaymentStatus.PAID;

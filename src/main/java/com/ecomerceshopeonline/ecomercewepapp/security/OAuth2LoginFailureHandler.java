@@ -28,6 +28,7 @@ public class OAuth2LoginFailureHandler extends SimpleUrlAuthenticationFailureHan
         String target = UriComponentsBuilder
                 .fromUriString(properties.oauth2().redirectUri())
                 .queryParam("error", exception.getMessage())
+                .encode()
                 .build().toUriString();
 
         getRedirectStrategy().sendRedirect(request, response, target);

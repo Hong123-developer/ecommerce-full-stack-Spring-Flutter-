@@ -4,12 +4,14 @@ import com.ecomerceshopeonline.ecomercewepapp.dto.response.ApiResponse;
 import com.ecomerceshopeonline.ecomercewepapp.dto.response.CustomerResponse;
 import com.ecomerceshopeonline.ecomercewepapp.dto.response.DashboardResponse;
 import com.ecomerceshopeonline.ecomercewepapp.dto.response.PageResponse;
+import com.ecomerceshopeonline.ecomercewepapp.security.CustomUserDetails;
 import com.ecomerceshopeonline.ecomercewepapp.service.AdminCustomerService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -43,6 +45,17 @@ public class AdminCustomerController {
                                                     @RequestParam boolean enabled) {
         return ApiResponse.ok(enabled ? "Customer enabled" : "Customer disabled",
                 adminCustomerService.setEnabled(id, enabled));
+    }
+
+    /**
+     * Permanent removal - only for customers without orders (409 otherwise; disable instead).
+     * Administrators, including the caller, cannot be deleted here.
+     */
+    @DeleteMapping("/{id}")
+    public ApiResponse<Void> delete(@PathVariable Long id,
+                                    @AuthenticationPrincipal CustomUserDetails principal) {
+        adminCustomerService.delete(id, principal == null ? null : principal.getId());
+        return ApiResponse.ok("Customer deleted", null);
     }
 
     /** Registration history: signups per day over the trailing window. */

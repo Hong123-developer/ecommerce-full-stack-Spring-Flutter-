@@ -73,12 +73,12 @@ public class StatisticsServiceImpl implements StatisticsService {
                         orderRepository.totalOrderValueExcluding(OrderStatus.CANCELLED)),
                 new DashboardResponse.Customers(
                         userRepository.countByRole(RoleName.ROLE_CUSTOMER),
-                        userRepository.countByCreatedAtAfter(since)),
+                        userRepository.countByRoleCreatedSince(RoleName.ROLE_CUSTOMER, since)),
                 new DashboardResponse.Catalogue(
                         productRepository.countByEnabledTrue(),
                         productRepository.countLowStock(LOW_STOCK_THRESHOLD)),
                 topProducts,
                 DailySeries.points(paymentRepository.revenueByDay(PaymentStatus.PAID, since)),
-                DailySeries.counts(userRepository.registrationsByDay(since)));
+                DailySeries.counts(userRepository.registrationsByDay(RoleName.ROLE_CUSTOMER, since)));
     }
 }

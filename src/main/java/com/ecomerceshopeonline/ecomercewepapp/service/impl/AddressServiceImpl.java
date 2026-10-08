@@ -4,6 +4,7 @@ import com.ecomerceshopeonline.ecomercewepapp.dto.request.AddressRequest;
 import com.ecomerceshopeonline.ecomercewepapp.dto.response.AddressResponse;
 import com.ecomerceshopeonline.ecomercewepapp.entity.Address;
 import com.ecomerceshopeonline.ecomercewepapp.entity.User;
+import com.ecomerceshopeonline.ecomercewepapp.exception.FieldValidationException;
 import com.ecomerceshopeonline.ecomercewepapp.exception.ResourceNotFoundException;
 import com.ecomerceshopeonline.ecomercewepapp.mapper.AddressMapper;
 import com.ecomerceshopeonline.ecomercewepapp.repository.AddressRepository;
@@ -40,6 +41,7 @@ public class AddressServiceImpl implements AddressService {
     @Override
     @Transactional
     public AddressResponse create(Long userId, AddressRequest request) {
+        requireCoordinatePair(request);
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> ResourceNotFoundException.of("User", userId));
 
@@ -60,6 +62,7 @@ public class AddressServiceImpl implements AddressService {
     @Override
     @Transactional
     public AddressResponse update(Long userId, Long addressId, AddressRequest request) {
+        requireCoordinatePair(request);
         Address address = require(userId, addressId);
         addressMapper.apply(request, address);
 
@@ -92,6 +95,14 @@ public class AddressServiceImpl implements AddressService {
                 next.setDefault(true);
                 addressRepository.save(next);
             });
+        }
+    }
+
+    /** Half a map pin is no pin: a latitude without its longitude cannot be shown or routed to. */
+    private static void requireCoordinatePair(AddressRequest request) {
+        if ((request.latitude() == null) != (request.longitude() == null)) {
+            throw new FieldValidationException(request.latitude() == null ? "latitude" : "longitude",
+                    "Latitude and longitude must be given together");
         }
     }
 

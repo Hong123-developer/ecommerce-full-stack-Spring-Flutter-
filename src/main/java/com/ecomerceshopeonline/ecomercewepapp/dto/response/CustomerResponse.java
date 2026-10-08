@@ -18,8 +18,9 @@ public record CustomerResponse(
         boolean emailVerified,
         boolean enabled,
         LocalDateTime registeredAt,
-        /** Detail view only. */
+        /** List and detail views. */
         Long orderCount,
+        /** Detail view only. */
         BigDecimal totalSpent,
         List<AddressResponse> addresses
 ) {

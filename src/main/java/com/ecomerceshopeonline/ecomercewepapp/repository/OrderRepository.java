@@ -11,6 +11,7 @@ import org.springframework.stereotype.Repository;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
@@ -34,6 +35,7 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
             SELECT o FROM Order o
             LEFT JOIN FETCH o.items i
             LEFT JOIN FETCH i.product
+            LEFT JOIN FETCH i.variant
             LEFT JOIN FETCH o.payment
             WHERE o.id = :id AND o.user.id = :userId
             """)
@@ -45,6 +47,7 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
             SELECT o FROM Order o
             LEFT JOIN FETCH o.items i
             LEFT JOIN FETCH i.product
+            LEFT JOIN FETCH i.variant
             LEFT JOIN FETCH o.payment
             LEFT JOIN FETCH o.user
             WHERE o.id = :id
@@ -57,15 +60,15 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
             LEFT JOIN FETCH o.user u
             WHERE (:status IS NULL OR o.status = :status)
               AND (:search IS NULL
-                   OR LOWER(o.orderNumber) LIKE LOWER(CONCAT('%', :search, '%'))
-                   OR LOWER(u.email) LIKE LOWER(CONCAT('%', :search, '%')))
+                   OR LOWER(o.orderNumber) LIKE LOWER(CONCAT('%', CAST(:search AS String), '%'))
+                   OR LOWER(u.email) LIKE LOWER(CONCAT('%', CAST(:search AS String), '%')))
             """,
             countQuery = """
             SELECT COUNT(o) FROM Order o
             WHERE (:status IS NULL OR o.status = :status)
               AND (:search IS NULL
-                   OR LOWER(o.orderNumber) LIKE LOWER(CONCAT('%', :search, '%'))
-                   OR LOWER(o.user.email) LIKE LOWER(CONCAT('%', :search, '%')))
+                   OR LOWER(o.orderNumber) LIKE LOWER(CONCAT('%', CAST(:search AS String), '%'))
+                   OR LOWER(o.user.email) LIKE LOWER(CONCAT('%', CAST(:search AS String), '%')))
             """)
     Page<Order> adminSearch(@Param("status") OrderStatus status,
                             @Param("search") String search,
@@ -101,4 +104,8 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
             ORDER BY SUM(oi.quantity) DESC
             """)
     List<Object[]> topSellingProducts(@Param("excluded") OrderStatus excluded, Pageable pageable);
+
+    /** Rows of [userId, orderCount] for a page of customers - one query instead of N. */
+    @Query("SELECT o.user.id, COUNT(o) FROM Order o WHERE o.user.id IN :userIds GROUP BY o.user.id")
+    List<Object[]> countByUserIds(@Param("userIds") Collection<Long> userIds);
 }

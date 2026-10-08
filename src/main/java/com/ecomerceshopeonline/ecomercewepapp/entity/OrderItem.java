@@ -13,7 +13,8 @@ import java.math.BigDecimal;
         name = "order_items",
         indexes = {
                 @Index(name = "idx_order_items_order", columnList = "order_id"),
-                @Index(name = "idx_order_items_product", columnList = "product_id")
+                @Index(name = "idx_order_items_product", columnList = "product_id"),
+                @Index(name = "idx_order_items_variant", columnList = "variant_id")
         }
 )
 @Getter
@@ -45,8 +46,24 @@ public class OrderItem {
     )
     private Product product;
 
+    /** Null for a product without variants. Variants that were ordered are disabled, never deleted. */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(
+            name = "variant_id",
+            foreignKey = @ForeignKey(name = "fk_order_items_variant")
+    )
+    private ProductVariant variant;
+
     @Column(name = "product_name", nullable = false, length = 200)
     private String productName;
+
+    /** Snapshot of the chosen options, e.g. "iPhone 14 Pro · 256GB · Purple"; null without variants. */
+    @Column(name = "variant_label", length = 200)
+    private String variantLabel;
+
+    /** Snapshot of the variant code (or the product SKU) at purchase time. Null on older orders. */
+    @Column(name = "sku", length = 64)
+    private String sku;
 
     @Column(name = "quantity", nullable = false)
     private Integer quantity;

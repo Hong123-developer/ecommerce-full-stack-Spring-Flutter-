@@ -64,6 +64,23 @@ public class VerificationCodeServiceImpl implements VerificationCodeService {
 
     @Override
     @Transactional
+    public boolean issueAndSendUnlessRecent(User user, VerificationPurpose purpose) {
+        LocalDateTime now = LocalDateTime.now();
+        int cooldown = properties.otp().resendCooldownSeconds();
+        boolean sentRecently = verificationCodeRepository
+                .findTopByUserIdAndPurposeAndUsedFalseOrderByCreatedAtDesc(user.getId(), purpose)
+                .filter(previous -> !previous.isExpired(now))
+                .map(previous -> now.isBefore(previous.getCreatedAt().plusSeconds(cooldown)))
+                .orElse(false);
+        if (sentRecently) {
+            return false;
+        }
+        issueAndSend(user, purpose);
+        return true;
+    }
+
+    @Override
+    @Transactional
     public void consume(User user, VerificationPurpose purpose, String rawCode) {
         LocalDateTime now = LocalDateTime.now();
 

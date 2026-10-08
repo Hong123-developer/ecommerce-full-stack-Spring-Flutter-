@@ -13,4 +13,7 @@ public interface OrderItemRepository extends JpaRepository<OrderItem, Long> {
 
     /** Guards hard-deletion of a product that already appears in order history. */
     boolean existsByProductId(Long productId);
+
+    /** A variant that was ordered is disabled instead of deleted. */
+    boolean existsByVariantId(Long variantId);
 }

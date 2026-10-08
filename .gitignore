@@ -43,3 +43,6 @@ application-local.properties
 # Spring Boot auto-loads ./config/ and it overrides the packaged properties.
 # Real credentials live here and must never be committed.
 /config/
+
+### Uploaded images - runtime data, not source ###
+/uploads/

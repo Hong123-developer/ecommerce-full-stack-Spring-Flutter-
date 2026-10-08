@@ -10,6 +10,9 @@ public record AddToCartRequest(
 
         @NotNull(message = "Quantity is required")
         @Min(value = 1, message = "Quantity must be at least 1")
-        Integer quantity
+        Integer quantity,
+
+        /** Required when the product has enabled variants; must be one of them. */
+        Long variantId
 ) {
 }

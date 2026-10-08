@@ -53,10 +53,7 @@ public class JwtService {
                 .compact();
     }
 
-    /**
-     * @return the user id carried in the token, or empty if the token is missing,
-     * malformed, expired, or signed with the wrong key.
-     */
+
     public Optional<Long> extractUserId(String token) {
         return parseClaims(token).map(claims -> Long.valueOf(claims.getSubject()));
     }

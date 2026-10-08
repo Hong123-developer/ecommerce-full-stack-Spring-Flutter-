@@ -17,7 +17,7 @@ class KhqrGeneratorTest {
             "prol_menghong@bkrt", "MENGHONG PROL", "Phnom Penh", "USD", 30);
 
     private final KhqrGenerator generator = new KhqrGenerator(
-            new AppProperties(null, null, null, null, null, null, null, CONFIG));
+            new AppProperties(null, null, null, null, null, null, null, CONFIG, null, null));
 
     /**
      * The canonical CRC-16/CCITT-FALSE check value: "123456789" must hash to 0x29B1.

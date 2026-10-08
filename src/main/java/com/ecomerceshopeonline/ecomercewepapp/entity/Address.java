@@ -51,6 +51,16 @@ public class Address extends BaseEntity {
     @Column(name = "address_detail", length = 500)
     private String addressDetail;
 
+    /**
+     * Map pin set with "Auto location" (browser GPS) or "Pick on map". Both are set or both
+     * are null; addresses saved before the map existed have none.
+     */
+    @Column(name = "latitude")
+    private Double latitude;
+
+    @Column(name = "longitude")
+    private Double longitude;
+
     @Column(name = "is_default", nullable = false)
     @Builder.Default
     private boolean isDefault = false;

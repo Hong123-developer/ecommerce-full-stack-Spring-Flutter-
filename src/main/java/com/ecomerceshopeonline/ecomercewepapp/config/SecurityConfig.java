@@ -28,6 +28,7 @@ public class SecurityConfig {
     private final RestAuthenticationEntryPoint authenticationEntryPoint;
     private final RestAccessDeniedHandler accessDeniedHandler;
     private final CustomOAuth2UserService oAuth2UserService;
+    private final CustomOidcUserService oidcUserService;
     private final OAuth2LoginSuccessHandler oAuth2LoginSuccessHandler;
     private final OAuth2LoginFailureHandler oAuth2LoginFailureHandler;
     private final AppProperties properties;
@@ -67,12 +68,26 @@ public class SecurityConfig {
                         // browsing the catalogue does not require an account
                         .requestMatchers(HttpMethod.GET, "/api/v1/categories/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/products/**").permitAll()
+                        // the home-page hero carousel is part of the public storefront too
+                        .requestMatchers(HttpMethod.GET, "/api/v1/hero-slides/**").permitAll()
+                        // store name, logo and contact details shown in the storefront header/footer
+                        .requestMatchers(HttpMethod.GET, "/api/v1/store-settings").permitAll()
+                        // delivery companies / store pickup and their fees, shown in the cart and checkout
+                        .requestMatchers(HttpMethod.GET, "/api/v1/delivery-options").permitAll()
+                        // uploaded product images are public, like the catalogue that shows them
+                        .requestMatchers(HttpMethod.GET, "/uploads/**").permitAll()
+                        // which payment methods checkout may offer (card only once configured)
+                        .requestMatchers(HttpMethod.GET, "/api/v1/payments/methods").permitAll()
+                        // the card provider's server-to-server pushback; it only triggers a re-check
+                        .requestMatchers(HttpMethod.POST, "/api/v1/payments/payway/callback").permitAll()
                         // --- role gated ---
                         .requestMatchers("/api/v1/admin/**").hasRole("ADMIN")
                         // --- everything else needs a signed-in user ---
                         .anyRequest().authenticated())
                 .oauth2Login(oauth -> oauth
-                        .userInfoEndpoint(userInfo -> userInfo.userService(oAuth2UserService))
+                        .userInfoEndpoint(userInfo -> userInfo
+                                .userService(oAuth2UserService)        // Facebook (plain OAuth2)
+                                .oidcUserService(oidcUserService))     // Google ("openid" scope = OIDC)
                         .successHandler(oAuth2LoginSuccessHandler)
                         .failureHandler(oAuth2LoginFailureHandler))
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);

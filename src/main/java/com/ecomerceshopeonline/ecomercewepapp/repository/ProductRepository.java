@@ -31,7 +31,7 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
             JOIN FETCH p.category c
             WHERE p.enabled = true
               AND (:categoryId IS NULL OR c.id = :categoryId)
-              AND (:search IS NULL OR LOWER(p.name) LIKE LOWER(CONCAT('%', :search, '%')))
+              AND (:search IS NULL OR LOWER(p.name) LIKE LOWER(CONCAT('%', CAST(:search AS String), '%')))
               AND (:minPrice IS NULL OR p.price >= :minPrice)
               AND (:maxPrice IS NULL OR p.price <= :maxPrice)
             """,
@@ -39,7 +39,7 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
             SELECT COUNT(p) FROM Product p
             WHERE p.enabled = true
               AND (:categoryId IS NULL OR p.category.id = :categoryId)
-              AND (:search IS NULL OR LOWER(p.name) LIKE LOWER(CONCAT('%', :search, '%')))
+              AND (:search IS NULL OR LOWER(p.name) LIKE LOWER(CONCAT('%', CAST(:search AS String), '%')))
               AND (:minPrice IS NULL OR p.price >= :minPrice)
               AND (:maxPrice IS NULL OR p.price <= :maxPrice)
             """)
@@ -82,6 +82,59 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
              WHERE p.id = :productId
             """)
     int incrementStock(@Param("productId") Long productId, @Param("quantity") int quantity);
+
+    /**
+     * Puts a plain order line's units back - only while the product is still plain. A product
+     * that gained enabled variants after the order derives its stock from them, so adding the
+     * units here would push the total above the sum of its variants.
+     * Not clearAutomatically - see {@link #incrementStock}.
+     */
+    @Modifying
+    @Query("""
+            UPDATE Product p
+               SET p.stockQuantity = p.stockQuantity + :quantity
+             WHERE p.id = :productId
+               AND NOT EXISTS (SELECT v.id FROM ProductVariant v
+                                WHERE v.product.id = :productId AND v.enabled = true)
+            """)
+    int incrementStockIfPlain(@Param("productId") Long productId, @Param("quantity") int quantity);
+
+    /**
+     * Relative change of a variant product's total after one of its variants' stock moved by
+     * {@code delta} in the same transaction (checkout: negative, cancellation: positive).
+     * Applied only while that variant is enabled - a retired variant no longer counts towards
+     * the product total, and a product whose variants are all retired is a plain product whose
+     * stock the admin owns. Relative (not a re-computed SUM) so concurrent orders on different
+     * variants of the same product cannot overwrite each other's change under READ COMMITTED.
+     */
+    @Modifying
+    @Query("""
+            UPDATE Product p
+               SET p.stockQuantity = p.stockQuantity + :delta
+             WHERE p.id = :productId
+               AND EXISTS (SELECT v.id FROM ProductVariant v
+                            WHERE v.id = :variantId AND v.product.id = :productId AND v.enabled = true)
+            """)
+    int adjustStockForVariant(@Param("productId") Long productId,
+                              @Param("variantId") Long variantId,
+                              @Param("delta") int delta);
+
+    /**
+     * Re-derives a variant product's stock as the sum of its enabled variants (absolute
+     * recompute - for admin-side use only, never on the checkout/cancel path). A product
+     * without any enabled variant is a plain product and is left alone.
+     */
+    @Modifying
+    @Query("""
+            UPDATE Product p
+               SET p.stockQuantity = (SELECT CAST(COALESCE(SUM(v.stockQuantity), 0) AS Integer)
+                                        FROM ProductVariant v
+                                       WHERE v.product.id = :productId AND v.enabled = true)
+             WHERE p.id = :productId
+               AND EXISTS (SELECT v2.id FROM ProductVariant v2
+                            WHERE v2.product.id = :productId AND v2.enabled = true)
+            """)
+    int syncStockFromVariants(@Param("productId") Long productId);
 
     long countByEnabledTrue();
 

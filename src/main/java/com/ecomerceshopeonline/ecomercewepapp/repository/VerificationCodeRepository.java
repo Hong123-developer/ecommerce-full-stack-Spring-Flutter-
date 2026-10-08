@@ -20,4 +20,9 @@ public interface VerificationCodeRepository extends JpaRepository<VerificationCo
     @Modifying
     @Query("DELETE FROM VerificationCode v WHERE v.expiresAt < :cutoff")
     int deleteExpired(@Param("cutoff") LocalDateTime cutoff);
+
+    /** Account deletion - removes every code issued to the user. */
+    @Modifying(flushAutomatically = true)
+    @Query("DELETE FROM VerificationCode v WHERE v.user.id = :userId")
+    int bulkDeleteByUserId(@Param("userId") Long userId);
 }

@@ -130,6 +130,8 @@ class ShoppingFlowIntegrationTest {
         assertThat(khqr.get("payload").asString()).startsWith("000201010212");
         assertThat(khqr.get("qrImage").asString()).startsWith("data:image/png;base64,");
         assertThat(khqr.get("md5").asString()).hasSize(32);
+        assertThat(khqr.get("expiresAt").asString()).endsWith("Z");
+        assertThat(khqr.get("expiresInSeconds").asLong()).isBetween(1L, 30L * 60);
 
         long paymentId = objectMapper.readTree(payBody).get("data").get("id").asLong();
 
@@ -152,7 +154,14 @@ class ShoppingFlowIntegrationTest {
         // paying moves the order forward on its own
         mockMvc.perform(get("/api/v1/orders/" + orderId).with(asCustomer))
                 .andExpect(jsonPath("$.data.status").value("CONFIRMED"))
-                .andExpect(jsonPath("$.data.paymentStatus").value("PAID"));
+                .andExpect(jsonPath("$.data.paymentStatus").value("PAID"))
+                // money has been taken: cancelling now needs a refund through the shop
+                .andExpect(jsonPath("$.data.cancellable").value(false));
+
+        mockMvc.perform(patch("/api/v1/orders/" + orderId + "/cancel").with(asCustomer))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message").value(
+                        org.hamcrest.Matchers.containsString("already been paid")));
 
         // --- the dashboard runs its grouped/CAST queries against real data ---
         mockMvc.perform(get("/api/v1/admin/dashboard").with(asAdmin).param("days", "30"))
@@ -188,6 +197,37 @@ class ShoppingFlowIntegrationTest {
                 .andExpect(jsonPath("$.data.paymentStatus").value("CANCELLED"));
 
         assertThat(stockOf(productId)).isEqualTo(5);
+    }
+
+    @Test
+    void paymentArrivingAfterCancellationIsNotSettled() throws Exception {
+        long categoryId = createCategory("Late Pay");
+        long productId = createProduct(categoryId, "Lamp", "SKU-LAMP-" + SEQ.incrementAndGet(),
+                "12.00", 4);
+        long addressId = createAddress();
+
+        addToCart(productId, 1);
+        long orderId = checkout(addressId, "KHQR");
+
+        String payBody = mockMvc.perform(post("/api/v1/payments/orders/" + orderId).with(asCustomer))
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString();
+        long paymentId = objectMapper.readTree(payBody).get("data").get("id").asLong();
+
+        // The shopper cancels while the QR is still open...
+        mockMvc.perform(patch("/api/v1/orders/" + orderId + "/cancel").with(asCustomer))
+                .andExpect(status().isOk());
+
+        // ...then pays it anyway.
+        when(bakongClient.checkTransaction(anyString())).thenReturn(
+                new BakongClient.TransactionCheck(true, "LATE-HASH", "payer@abaa", "Confirmed"));
+        mockMvc.perform(post("/api/v1/payments/" + paymentId + "/check").with(asCustomer))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.paymentStatus").value("CANCELLED"));
+
+        mockMvc.perform(get("/api/v1/orders/" + orderId).with(asCustomer))
+                .andExpect(jsonPath("$.data.status").value("CANCELLED"));
+        assertThat(stockOf(productId)).isEqualTo(4);
     }
 
     @Test

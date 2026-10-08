@@ -8,6 +8,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.stereotype.Repository;
 
 import java.time.LocalDateTime;
@@ -30,18 +31,18 @@ public interface UserRepository extends JpaRepository<User, Long> {
             SELECT DISTINCT u FROM User u JOIN u.roles r
             WHERE r.name = :roleName
               AND (:search IS NULL
-                   OR LOWER(u.fullName) LIKE LOWER(CONCAT('%', :search, '%'))
-                   OR LOWER(u.email) LIKE LOWER(CONCAT('%', :search, '%'))
-                   OR u.phone LIKE CONCAT('%', :search, '%'))
+                   OR LOWER(u.fullName) LIKE LOWER(CONCAT('%', CAST(:search AS String), '%'))
+                   OR LOWER(u.email) LIKE LOWER(CONCAT('%', CAST(:search AS String), '%'))
+                   OR u.phone LIKE CONCAT('%', CAST(:search AS String), '%'))
               AND (:enabled IS NULL OR u.enabled = :enabled)
             """,
             countQuery = """
             SELECT COUNT(DISTINCT u) FROM User u JOIN u.roles r
             WHERE r.name = :roleName
               AND (:search IS NULL
-                   OR LOWER(u.fullName) LIKE LOWER(CONCAT('%', :search, '%'))
-                   OR LOWER(u.email) LIKE LOWER(CONCAT('%', :search, '%'))
-                   OR u.phone LIKE CONCAT('%', :search, '%'))
+                   OR LOWER(u.fullName) LIKE LOWER(CONCAT('%', CAST(:search AS String), '%'))
+                   OR LOWER(u.email) LIKE LOWER(CONCAT('%', CAST(:search AS String), '%'))
+                   OR u.phone LIKE CONCAT('%', CAST(:search AS String), '%'))
               AND (:enabled IS NULL OR u.enabled = :enabled)
             """)
     Page<User> adminSearch(@Param("roleName") RoleName roleName,
@@ -52,15 +53,32 @@ public interface UserRepository extends JpaRepository<User, Long> {
     @Query("SELECT COUNT(DISTINCT u) FROM User u JOIN u.roles r WHERE r.name = :roleName")
     long countByRole(@Param("roleName") RoleName roleName);
 
-    long countByCreatedAtAfter(LocalDateTime since);
-
-    /** Rows of [day, signups] - the registration history chart. */
+    /** New accounts of one role since a moment - administrators are not "new customers". */
     @Query("""
-            SELECT CAST(u.createdAt AS date), COUNT(u)
-            FROM User u
-            WHERE u.createdAt >= :since
+            SELECT COUNT(DISTINCT u) FROM User u JOIN u.roles r
+            WHERE r.name = :roleName AND u.createdAt >= :since
+            """)
+    long countByRoleCreatedSince(@Param("roleName") RoleName roleName,
+                                 @Param("since") LocalDateTime since);
+
+    /** Rows of [day, signups] for one role - the registration history chart. */
+    @Query("""
+            SELECT CAST(u.createdAt AS date), COUNT(DISTINCT u)
+            FROM User u JOIN u.roles r
+            WHERE r.name = :roleName AND u.createdAt >= :since
             GROUP BY CAST(u.createdAt AS date)
             ORDER BY CAST(u.createdAt AS date)
             """)
-    List<Object[]> registrationsByDay(@Param("since") LocalDateTime since);
+    List<Object[]> registrationsByDay(@Param("roleName") RoleName roleName,
+                                      @Param("since") LocalDateTime since);
+
+    /** Account deletion - the user_roles join table has no entity of its own. */
+    @Modifying(flushAutomatically = true)
+    @Query(value = "DELETE FROM user_roles WHERE user_id = :userId", nativeQuery = true)
+    int deleteRoleLinks(@Param("userId") Long userId);
+
+    /** Account deletion - the last step, once every referencing row is gone. */
+    @Modifying(flushAutomatically = true, clearAutomatically = true)
+    @Query("DELETE FROM User u WHERE u.id = :userId")
+    int bulkDeleteById(@Param("userId") Long userId);
 }

@@ -7,22 +7,32 @@ import com.ecomerceshopeonline.ecomercewepapp.entity.User;
 import com.ecomerceshopeonline.ecomercewepapp.entity.enums.OrderStatus;
 import com.ecomerceshopeonline.ecomercewepapp.entity.enums.RoleName;
 import com.ecomerceshopeonline.ecomercewepapp.exception.BadRequestException;
+import com.ecomerceshopeonline.ecomercewepapp.exception.ConflictException;
 import com.ecomerceshopeonline.ecomercewepapp.exception.ResourceNotFoundException;
 import com.ecomerceshopeonline.ecomercewepapp.mapper.AddressMapper;
 import com.ecomerceshopeonline.ecomercewepapp.repository.AddressRepository;
+import com.ecomerceshopeonline.ecomercewepapp.repository.CartItemRepository;
+import com.ecomerceshopeonline.ecomercewepapp.repository.CartRepository;
 import com.ecomerceshopeonline.ecomercewepapp.repository.OrderRepository;
+import com.ecomerceshopeonline.ecomercewepapp.repository.PaymentRepository;
+import com.ecomerceshopeonline.ecomercewepapp.repository.RefreshTokenRepository;
 import com.ecomerceshopeonline.ecomercewepapp.repository.UserRepository;
+import com.ecomerceshopeonline.ecomercewepapp.repository.VerificationCodeRepository;
 import com.ecomerceshopeonline.ecomercewepapp.service.AdminCustomerService;
 import com.ecomerceshopeonline.ecomercewepapp.service.RefreshTokenService;
 import com.ecomerceshopeonline.ecomercewepapp.util.DailySeries;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 
 @Slf4j
 @Service
@@ -34,14 +44,20 @@ public class AdminCustomerServiceImpl implements AdminCustomerService {
     private final AddressRepository addressRepository;
     private final AddressMapper addressMapper;
     private final RefreshTokenService refreshTokenService;
+    private final CartRepository cartRepository;
+    private final CartItemRepository cartItemRepository;
+    private final PaymentRepository paymentRepository;
+    private final RefreshTokenRepository refreshTokenRepository;
+    private final VerificationCodeRepository verificationCodeRepository;
 
     @Override
     @Transactional(readOnly = true)
     public PageResponse<CustomerResponse> list(String search, Boolean enabled, Pageable pageable) {
-        return PageResponse.from(
-                userRepository.adminSearch(RoleName.ROLE_CUSTOMER, blankToNull(search),
-                        enabled, pageable),
-                this::toSummary);
+        Page<User> page = userRepository.adminSearch(RoleName.ROLE_CUSTOMER, blankToNull(search),
+                enabled, pageable);
+        Map<Long, Long> orderCounts = orderCountsFor(page.getContent());
+        return PageResponse.from(page,
+                user -> toSummary(user, orderCounts.getOrDefault(user.getId(), 0L)));
     }
 
     @Override
@@ -63,9 +79,7 @@ public class AdminCustomerServiceImpl implements AdminCustomerService {
     public CustomerResponse setEnabled(Long customerId, boolean enabled) {
         User user = require(customerId);
 
-        boolean isAdmin = user.getRoles().stream()
-                .anyMatch(role -> role.getName() == RoleName.ROLE_ADMIN);
-        if (isAdmin) {
+        if (isAdmin(user)) {
             throw new BadRequestException("Administrator accounts cannot be disabled here");
         }
 
@@ -77,7 +91,40 @@ public class AdminCustomerServiceImpl implements AdminCustomerService {
             refreshTokenService.revokeAllForUser(customerId);
             log.info("Customer {} disabled and all sessions revoked", customerId);
         }
-        return toSummary(user);
+        return toSummary(user, orderRepository.countByUserId(customerId));
+    }
+
+    @Override
+    @Transactional
+    public void delete(Long customerId, Long actingAdminId) {
+        User user = require(customerId);
+
+        if (Objects.equals(customerId, actingAdminId)) {
+            throw new BadRequestException("You can't delete your own account");
+        }
+        if (isAdmin(user)) {
+            throw new BadRequestException("Administrator accounts can't be deleted here");
+        }
+        long orders = orderRepository.countByUserId(customerId);
+        if (orders > 0) {
+            // Orders and payments are financial records - they are never deleted.
+            throw new ConflictException(("This customer has %d order(s). Disable the account "
+                    + "instead to keep your sales history.").formatted(orders));
+        }
+
+        // Children first: every FK to users is NO ACTION, and cart_items references carts.
+        verificationCodeRepository.bulkDeleteByUserId(customerId);
+        refreshTokenRepository.bulkDeleteByUserId(customerId);
+        cartItemRepository.bulkDeleteByUserId(customerId);
+        cartRepository.bulkDeleteByUserId(customerId);
+        addressRepository.bulkDeleteByUserId(customerId);
+        paymentRepository.bulkDeleteByUserId(customerId);
+        userRepository.deleteRoleLinks(customerId);
+        userRepository.bulkDeleteById(customerId);
+
+        // A still-valid access token now resolves to no account, so the JWT filter leaves
+        // the request anonymous (401) - see JwtAuthenticationFilter.
+        log.info("Customer {} deleted by admin {}", customerId, actingAdminId);
     }
 
     @Override
@@ -85,15 +132,31 @@ public class AdminCustomerServiceImpl implements AdminCustomerService {
     public List<DashboardResponse.DailyCount> registrationHistory(int days) {
         int window = Math.clamp(days, 1, 365);
         return DailySeries.counts(
-                userRepository.registrationsByDay(LocalDateTime.now().minusDays(window)));
+                userRepository.registrationsByDay(RoleName.ROLE_CUSTOMER, LocalDateTime.now().minusDays(window)));
     }
 
-    private CustomerResponse toSummary(User user) {
+    private CustomerResponse toSummary(User user, long orderCount) {
         return new CustomerResponse(
                 user.getId(), user.getFullName(), user.getEmail(), user.getPhone(),
                 user.getProfileImage(), user.getProvider(), user.isEmailVerified(),
                 user.isEnabled(), user.getCreatedAt(),
-                null, null, null);
+                orderCount, null, null);
+    }
+
+    /** Order counts for a page of users in one grouped query; users with none are absent. */
+    private Map<Long, Long> orderCountsFor(List<User> users) {
+        if (users.isEmpty()) {
+            return Map.of();
+        }
+        Map<Long, Long> counts = new HashMap<>();
+        for (Object[] row : orderRepository.countByUserIds(users.stream().map(User::getId).toList())) {
+            counts.put((Long) row[0], ((Number) row[1]).longValue());
+        }
+        return counts;
+    }
+
+    private boolean isAdmin(User user) {
+        return user.getRoles().stream().anyMatch(role -> role.getName() == RoleName.ROLE_ADMIN);
     }
 
     private User require(Long customerId) {

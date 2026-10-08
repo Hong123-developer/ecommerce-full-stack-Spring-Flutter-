@@ -10,6 +10,8 @@ import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
+import org.springframework.web.multipart.support.MissingServletRequestPartException;
 import org.springframework.web.servlet.NoHandlerFoundException;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
 import org.springframework.security.access.AccessDeniedException;
@@ -32,6 +34,14 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(ex.getStatus()).body(
                 ErrorResponse.of(ex.getStatus().value(), ex.getStatus().getReasonPhrase(),
                         ex.getMessage(), request.getRequestURI()));
+    }
+
+    @ExceptionHandler(FieldValidationException.class)
+    public ResponseEntity<ErrorResponse> handleFieldValidation(FieldValidationException ex,
+                                                               HttpServletRequest request) {
+        return ResponseEntity.badRequest().body(
+                ErrorResponse.validation(HttpStatus.BAD_REQUEST.value(), ex.getMessage(),
+                        request.getRequestURI(), ex.getFieldErrors()));
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
@@ -113,6 +123,23 @@ public class GlobalExceptionHandler {
         return ResponseEntity.badRequest().body(
                 ErrorResponse.of(HttpStatus.BAD_REQUEST.value(), "Bad Request",
                         message, request.getRequestURI()));
+    }
+
+    /** Thrown by the servlet container before our size check runs (spring.servlet.multipart.*). */
+    @ExceptionHandler(MaxUploadSizeExceededException.class)
+    public ResponseEntity<ErrorResponse> handleUploadTooLarge(HttpServletRequest request) {
+        return ResponseEntity.status(HttpStatus.CONTENT_TOO_LARGE).body(
+                ErrorResponse.of(HttpStatus.CONTENT_TOO_LARGE.value(), "Content Too Large",
+                        "That file is too large", request.getRequestURI()));
+    }
+
+    @ExceptionHandler(MissingServletRequestPartException.class)
+    public ResponseEntity<ErrorResponse> handleMissingPart(MissingServletRequestPartException ex,
+                                                           HttpServletRequest request) {
+        return ResponseEntity.badRequest().body(
+                ErrorResponse.of(HttpStatus.BAD_REQUEST.value(), "Bad Request",
+                        "Required file '" + ex.getRequestPartName() + "' is missing",
+                        request.getRequestURI()));
     }
 
     @ExceptionHandler(DataIntegrityViolationException.class)

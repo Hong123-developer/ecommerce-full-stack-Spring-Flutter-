@@ -6,8 +6,11 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.experimental.SuperBuilder;
+import org.hibernate.annotations.BatchSize;
 
 import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Table(
@@ -55,9 +58,56 @@ public class Product extends BaseEntity {
     @Column(name = "image_url", length = 500)
     private String imageUrl;
 
+    /**
+     * Extra photos shown after {@link #imageUrl} on the product page, in display order.
+     * {@code imageUrl} stays the main image everywhere else (cards, cart, orders).
+     * Batch-fetched so a page of products costs one extra query, not one per product.
+     */
+    @ElementCollection
+    @CollectionTable(
+            name = "product_gallery_images",
+            joinColumns = @JoinColumn(name = "product_id",
+                    foreignKey = @ForeignKey(name = "fk_product_gallery_product")))
+    @OrderColumn(name = "position")
+    @Column(name = "image_url", length = 500, nullable = false)
+    @BatchSize(size = 50)
+    @Builder.Default
+    private List<String> galleryUrls = new ArrayList<>();
+
+    /**
+     * Names of the choices a shopper makes, e.g. [Model, Storage, Color]. Empty for a plain
+     * product. Each variant's option values line up with these by position.
+     */
+    @ElementCollection
+    @CollectionTable(
+            name = "product_option_names",
+            joinColumns = @JoinColumn(name = "product_id",
+                    foreignKey = @ForeignKey(name = "fk_product_option_names_product")))
+    @OrderColumn(name = "position")
+    @Column(name = "name", length = 30, nullable = false)
+    @BatchSize(size = 50)
+    @Builder.Default
+    private List<String> optionNames = new ArrayList<>();
+
+    /**
+     * Buyable combinations of {@link #optionNames}. When there is at least one, {@link #price}
+     * and {@link #stockQuantity} are derived from them (see ProductVariantSync) so catalogue
+     * filters and sorts keep working on the product row. Not orphan-removed: the service
+     * decides whether a dropped variant is deleted or only disabled.
+     */
+    @OneToMany(mappedBy = "product", cascade = CascadeType.ALL)
+    @OrderBy("position ASC, id ASC")
+    @BatchSize(size = 50)
+    @Builder.Default
+    private List<ProductVariant> variants = new ArrayList<>();
+
     @Column(name = "enabled", nullable = false)
     @Builder.Default
     private boolean enabled = true;
+
+    public boolean hasEnabledVariants() {
+        return variants.stream().anyMatch(ProductVariant::isEnabled);
+    }
 
     public boolean isInStock(int requested) {
         return stockQuantity != null && stockQuantity >= requested;
