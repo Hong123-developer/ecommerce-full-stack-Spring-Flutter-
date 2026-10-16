@@ -22,6 +22,17 @@ public record ProductResponse(
         /** Empty without variants. Public endpoints list enabled variants only. */
         List<VariantResponse> variants,
         boolean enabled,
+        /** Average stars of the visible reviews, one decimal; 0 when there are none. */
+        BigDecimal rating,
+        /** Number of visible reviews. */
+        int reviewCount,
+        /**
+         * The shop's own star score (0.5-5, half stars), to be shown labelled "Shop rating",
+         * separate from the customer rating above; null when the shop hasn't set one.
+         */
+        BigDecimal shopRating,
+        /** Optional note for the shop rating; null when none (public views: whenever shopRating is). */
+        String shopRatingLabel,
         LocalDateTime createdAt,
         LocalDateTime updatedAt
 ) {

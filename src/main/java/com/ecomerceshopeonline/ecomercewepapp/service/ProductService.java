@@ -1,5 +1,6 @@
 package com.ecomerceshopeonline.ecomercewepapp.service;
 
+import com.ecomerceshopeonline.ecomercewepapp.dto.request.MoveDirection;
 import com.ecomerceshopeonline.ecomercewepapp.dto.request.ProductRequest;
 import com.ecomerceshopeonline.ecomercewepapp.dto.response.PageResponse;
 import com.ecomerceshopeonline.ecomercewepapp.dto.response.ProductResponse;
@@ -27,6 +28,9 @@ public interface ProductService {
     ProductResponse update(Long id, ProductRequest request);
 
     ProductResponse setEnabled(Long id, boolean enabled);
+
+    /** Swaps the product with its neighbour in the display order; 400 when it is already first / last. */
+    ProductResponse move(Long id, MoveDirection direction);
 
     void delete(Long id);
 }

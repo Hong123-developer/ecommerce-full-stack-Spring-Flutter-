@@ -30,7 +30,8 @@ public class ProductController {
             @RequestParam(required = false) Long categoryId,
             @RequestParam(required = false) BigDecimal minPrice,
             @RequestParam(required = false) BigDecimal maxPrice,
-            @PageableDefault(size = 20, sort = "createdAt", direction = Sort.Direction.DESC)
+            // The display order set in admin; ties fall back to the newest product.
+            @PageableDefault(size = 20, sort = "sortOrder", direction = Sort.Direction.ASC)
             Pageable pageable) {
         return ApiResponse.ok(
                 productService.browse(search, categoryId, minPrice, maxPrice, pageable));

@@ -7,6 +7,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.experimental.SuperBuilder;
 import org.hibernate.annotations.BatchSize;
+import org.hibernate.annotations.ColumnDefault;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
@@ -18,7 +19,8 @@ import java.util.List;
         uniqueConstraints = @UniqueConstraint(name = "uk_products_sku", columnNames = "sku"),
         indexes = {
                 @Index(name = "idx_products_category", columnList = "category_id"),
-                @Index(name = "idx_products_name", columnList = "name")
+                @Index(name = "idx_products_name", columnList = "name"),
+                @Index(name = "idx_products_sort_order", columnList = "sort_order, id")
         }
 )
 @Getter
@@ -104,6 +106,43 @@ public class Product extends BaseEntity {
     @Column(name = "enabled", nullable = false)
     @Builder.Default
     private boolean enabled = true;
+
+    /**
+     * Display position set from the admin Products page (move up / move down): lower comes first.
+     * Equal values fall back to the newest product, which is how every product created before
+     * ordering existed starts out (all 0). New products take the top slot.
+     */
+    @Column(name = "sort_order", nullable = false)
+    @ColumnDefault("0")
+    @Builder.Default
+    private int sortOrder = 0;
+
+    /**
+     * Average stars of the visible reviews, one decimal (0 without any). Derived - only
+     * ProductReviewService writes it, in the same transaction as the review change. Existing
+     * rows get 0 from the column default when the column is added.
+     */
+    @Column(name = "rating_average", nullable = false, precision = 2, scale = 1)
+    @ColumnDefault("0")
+    @Builder.Default
+    private BigDecimal ratingAverage = BigDecimal.ZERO;
+
+    /** Number of visible reviews. Derived, like {@link #ratingAverage}. */
+    @Column(name = "rating_count", nullable = false)
+    @ColumnDefault("0")
+    @Builder.Default
+    private int ratingCount = 0;
+
+    /**
+     * The shop's own star score (0.5 to 5 in half stars), set by the admin and shown to shoppers
+     * labelled "Shop rating" - never mixed into the customer {@link #ratingAverage}. Null = none.
+     */
+    @Column(name = "shop_rating", precision = 2, scale = 1)
+    private BigDecimal shopRating;
+
+    /** Optional note shown next to {@link #shopRating}, e.g. "Rated on our Facebook page". */
+    @Column(name = "shop_rating_label", length = 60)
+    private String shopRatingLabel;
 
     public boolean hasEnabledVariants() {
         return variants.stream().anyMatch(ProductVariant::isEnabled);

@@ -1,5 +1,6 @@
 package com.ecomerceshopeonline.ecomercewepapp.service.impl;
 
+import com.ecomerceshopeonline.ecomercewepapp.dto.request.MoveDirection;
 import com.ecomerceshopeonline.ecomercewepapp.dto.request.ProductRequest;
 import com.ecomerceshopeonline.ecomercewepapp.dto.request.VariantRequest;
 import com.ecomerceshopeonline.ecomercewepapp.dto.response.PageResponse;
@@ -16,10 +17,13 @@ import com.ecomerceshopeonline.ecomercewepapp.repository.CartItemRepository;
 import com.ecomerceshopeonline.ecomercewepapp.repository.CategoryRepository;
 import com.ecomerceshopeonline.ecomercewepapp.repository.OrderItemRepository;
 import com.ecomerceshopeonline.ecomercewepapp.repository.ProductRepository;
+import com.ecomerceshopeonline.ecomercewepapp.repository.ProductReviewRepository;
 import com.ecomerceshopeonline.ecomercewepapp.repository.ProductVariantRepository;
 import com.ecomerceshopeonline.ecomercewepapp.service.ProductService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -46,6 +50,7 @@ public class ProductServiceImpl implements ProductService {
     private final CategoryRepository categoryRepository;
     private final CartItemRepository cartItemRepository;
     private final OrderItemRepository orderItemRepository;
+    private final ProductReviewRepository reviewRepository;
     private final ProductMapper productMapper;
     private final ProductVariantSync variantSync;
 
@@ -58,7 +63,8 @@ public class ProductServiceImpl implements ProductService {
             throw new BadRequestException("minPrice cannot be greater than maxPrice");
         }
         return PageResponse.from(
-                productRepository.browse(blankToNull(search), categoryId, minPrice, maxPrice, pageable),
+                productRepository.browse(blankToNull(search), categoryId, minPrice, maxPrice,
+                        withTiebreaker(withRatingSort(pageable))),
                 productMapper::toPublicResponse);
     }
 
@@ -77,7 +83,8 @@ public class ProductServiceImpl implements ProductService {
     @Transactional(readOnly = true)
     public PageResponse<ProductResponse> listAll(Pageable pageable) {
         return PageResponse.from(
-                productRepository.findAllWithCategory(pageable), productMapper::toResponse);
+                productRepository.findAllWithCategory(withTiebreaker(withRatingSort(pageable))),
+                productMapper::toResponse);
     }
 
     @Override
@@ -108,6 +115,8 @@ public class ProductServiceImpl implements ProductService {
             productMapper.applyVariant(variantRequests.get(i), variant);
             product.getVariants().add(variant);
         }
+        // Newest first, as before ordering existed: the new product goes above the current top.
+        product.setSortOrder(productRepository.findMinSortOrder() - 1);
         variantSync.applyToProduct(product);
         return productMapper.toResponse(productRepository.save(product));
     }
@@ -155,6 +164,14 @@ public class ProductServiceImpl implements ProductService {
 
     @Override
     @Transactional
+    public ProductResponse move(Long id, MoveDirection direction) {
+        DisplayOrder.move(productRepository.findDisplayOrder(), id, direction, "Product",
+                productRepository::updateSortOrder);
+        return productMapper.toResponse(requireWithCategory(id));
+    }
+
+    @Override
+    @Transactional
     public void delete(Long id) {
         Product product = requireWithCategory(id);
 
@@ -165,6 +182,9 @@ public class ProductServiceImpl implements ProductService {
         // Carts are transient, so silently drop any lines pointing at the product.
         // Its variants go with it (cascade), none of them can have been ordered.
         cartItemRepository.deleteByProductId(id);
+        // Reviews need a delivered order, so normally there are none here - unless the orders
+        // were wiped from Settings > Data; they describe this product only, so they go too.
+        reviewRepository.bulkDeleteByProductId(id);
         productRepository.delete(product);
     }
 
@@ -353,5 +373,43 @@ public class ProductServiceImpl implements ProductService {
 
     private String blankToNull(String value) {
         return value == null || value.isBlank() ? null : value.trim();
+    }
+
+    /**
+     * Ends every sort with the id (newest first) so rows that tie on the requested key - the
+     * same price, or the shared sortOrder 0 of products from before ordering existed - keep
+     * one order across pages instead of whatever order the database happens to return.
+     */
+    private static Pageable withTiebreaker(Pageable pageable) {
+        if (pageable.isUnpaged() || pageable.getSort().getOrderFor("id") != null) {
+            return pageable;
+        }
+        return PageRequest.of(pageable.getPageNumber(), pageable.getPageSize(),
+                pageable.getSort().and(Sort.by(Sort.Direction.DESC, "id")));
+    }
+
+    /**
+     * {@code sort=rating} ("Top rated", any direction) means best average first, then the most
+     * reviews; {@code sort=reviewCount,desc} sorts by the number of reviews. Both name response
+     * fields, so they are mapped onto the stored columns here.
+     */
+    private static Pageable withRatingSort(Pageable pageable) {
+        if (pageable.isUnpaged()
+                || (pageable.getSort().getOrderFor("rating") == null
+                && pageable.getSort().getOrderFor("reviewCount") == null)) {
+            return pageable;
+        }
+        List<Sort.Order> orders = new ArrayList<>();
+        for (Sort.Order order : pageable.getSort()) {
+            switch (order.getProperty()) {
+                case "rating" -> {
+                    orders.add(Sort.Order.desc("ratingAverage"));
+                    orders.add(Sort.Order.desc("ratingCount"));
+                }
+                case "reviewCount" -> orders.add(order.withProperty("ratingCount"));
+                default -> orders.add(order);
+            }
+        }
+        return PageRequest.of(pageable.getPageNumber(), pageable.getPageSize(), Sort.by(orders));
     }
 }

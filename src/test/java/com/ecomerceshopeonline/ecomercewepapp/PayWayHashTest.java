@@ -89,6 +89,37 @@ class PayWayHashTest {
         assertThat(PayWayHash.purchaseHash(fields, KEY)).isEqualTo(PURCHASE_HASH);
     }
 
+    /** The docs leave view_type out of the hash list: popup and hosted sign the same. */
+    @Test
+    void viewTypeDoesNotChangeThePurchaseHash() {
+        assertThat(PayWayHash.PURCHASE_HASH_FIELDS).doesNotContain("view_type", "payment_gate");
+
+        Map<String, String> fields = new LinkedHashMap<>();
+        fields.put("req_time", "20261007083000");
+        fields.put("merchant_id", "ec000002");
+        fields.put("tran_id", "ORD1728289800123");
+        fields.put("amount", "12.50");
+        fields.put("items", "W3sibmFtZSI6IlQtc2hpcnQiLCJxdWFudGl0eSI6MSwicHJpY2UiOjEyLjV9XQ==");
+        fields.put("firstname", "Sok");
+        fields.put("lastname", "Dara");
+        fields.put("email", "sok@example.com");
+        fields.put("phone", "012345678");
+        fields.put("type", "purchase");
+        fields.put("payment_option", "cards");
+        fields.put("return_url",
+                "aHR0cHM6Ly9hcGkuZXhhbXBsZS5jb20vYXBpL3BheW1lbnRzL3BheXdheS9jYWxsYmFjaw==");
+        fields.put("continue_success_url",
+                "https://shop.example.com/checkout/success?order=ORD1728289800123");
+        fields.put("currency", "USD");
+        fields.put("return_params", "ORD1728289800123");
+        assertThat(PayWayHash.purchaseHash(fields, KEY)).isEqualTo(PURCHASE_HASH);
+
+        fields.put("view_type", "popup");
+        assertThat(PayWayHash.purchaseHash(fields, KEY)).isEqualTo(PURCHASE_HASH);
+        fields.put("view_type", "hosted_view");
+        assertThat(PayWayHash.purchaseHash(fields, KEY)).isEqualTo(PURCHASE_HASH);
+    }
+
     @Test
     void transactionHashIsReqTimeMerchantTran() {
         assertThat(PayWayHash.transactionHash("20250213065545", "ec000002", "17394277693", KEY))

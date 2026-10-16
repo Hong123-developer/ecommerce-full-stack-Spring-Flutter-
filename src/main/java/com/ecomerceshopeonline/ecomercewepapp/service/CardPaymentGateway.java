@@ -48,11 +48,17 @@ public interface CardPaymentGateway {
     /**
      * What the browser posts to the hosted page.
      *
-     * @param action absolute URL of the provider's purchase endpoint
-     * @param method always {@code POST}
-     * @param fields form field name -> value, in the order they must be posted (incl. hash)
+     * @param action  absolute URL of the provider's purchase endpoint
+     * @param method  always {@code POST}
+     * @param display how the shop shows the provider's page: {@link #DISPLAY_POPUP} (a secure
+     *                popup over the shop, the form posted into it) or {@link #DISPLAY_REDIRECT}
+     *                (the form submitted in the same tab)
+     * @param fields  form field name -> value, in the order they must be posted (incl. hash)
      */
-    record CardCheckout(String action, String method, Map<String, String> fields) {
+    record CardCheckout(String action, String method, String display, Map<String, String> fields) {
+
+        public static final String DISPLAY_POPUP = "popup";
+        public static final String DISPLAY_REDIRECT = "redirect";
     }
 
     /**

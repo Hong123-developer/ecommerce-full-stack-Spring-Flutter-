@@ -1,6 +1,7 @@
 package com.ecomerceshopeonline.ecomercewepapp.controller.admin;
 
 import com.ecomerceshopeonline.ecomercewepapp.dto.request.CategoryRequest;
+import com.ecomerceshopeonline.ecomercewepapp.dto.request.MoveDirection;
 import com.ecomerceshopeonline.ecomercewepapp.dto.response.ApiResponse;
 import com.ecomerceshopeonline.ecomercewepapp.dto.response.CategoryResponse;
 import com.ecomerceshopeonline.ecomercewepapp.dto.response.PageResponse;
@@ -27,9 +28,10 @@ public class AdminCategoryController {
 
     private final CategoryService categoryService;
 
+    /** Defaults to the display order set by {@link #move}; ties fall back to the name. */
     @GetMapping
     public ApiResponse<PageResponse<CategoryResponse>> listAll(
-            @PageableDefault(size = 20, sort = "id", direction = Sort.Direction.DESC)
+            @PageableDefault(size = 20, sort = "sortOrder", direction = Sort.Direction.ASC)
             Pageable pageable) {
         return ApiResponse.ok(categoryService.listAll(pageable));
     }
@@ -56,6 +58,14 @@ public class AdminCategoryController {
                                                     @RequestParam boolean enabled) {
         return ApiResponse.ok(enabled ? "Category enabled" : "Category disabled",
                 categoryService.setEnabled(id, enabled));
+    }
+
+    /** {@code ?direction=UP|DOWN} - one step in the order the shop lists categories in. */
+    @PatchMapping("/{id}/move")
+    public ApiResponse<CategoryResponse> move(@PathVariable Long id,
+                                              @RequestParam MoveDirection direction) {
+        return ApiResponse.ok(direction == MoveDirection.UP ? "Category moved up" : "Category moved down",
+                categoryService.move(id, direction));
     }
 
     @DeleteMapping("/{id}")

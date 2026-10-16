@@ -45,7 +45,8 @@ public final class PayWayHash {
 
     /**
      * Purchase hash order, exactly as the docs list it. {@code view_type} and
-     * {@code payment_gate} are not part of the hash (and this integration does not send them).
+     * {@code payment_gate} are not part of the hash: {@code view_type=popup} is posted
+     * unsigned in popup mode, {@code payment_gate} is never sent.
      */
     public static final List<String> PURCHASE_HASH_FIELDS = List.of(
             "req_time", "merchant_id", "tran_id", "amount", "items", "shipping",

@@ -21,6 +21,10 @@ import java.io.IOException;
  * The user is reloaded from the database on every request rather than trusted from the
  * token claims, so disabling an account or changing its roles takes effect immediately
  * instead of waiting for the access token to expire.
+ * <p>
+ * A token only counts for the account it was issued to - the same id <em>and</em> the same
+ * email. After a backup is restored, an id may belong to a different person than when the
+ * token was signed; such a token leaves the request anonymous instead of acting as them.
  */
 @Component
 @RequiredArgsConstructor
@@ -40,15 +44,19 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
         String token = resolveToken(request);
         if (token != null && SecurityContextHolder.getContext().getAuthentication() == null) {
-            jwtService.extractUserId(token).ifPresent(userId -> authenticate(userId, request));
+            jwtService.extractIdentity(token).ifPresent(identity -> authenticate(identity, request));
         }
         filterChain.doFilter(request, response);
     }
 
-    private void authenticate(Long userId, HttpServletRequest request) {
+    private void authenticate(JwtService.TokenIdentity identity, HttpServletRequest request) {
         try {
-            CustomUserDetails principal = (CustomUserDetails) userDetailsService.loadUserById(userId);
+            CustomUserDetails principal = (CustomUserDetails) userDetailsService.loadUserById(identity.userId());
             if (!principal.isEnabled()) {
+                return;
+            }
+            if (identity.email() == null || !identity.email().equalsIgnoreCase(principal.getUsername())) {
+                // The id now belongs to a different account than the one this token was issued to.
                 return;
             }
             var authentication = new UsernamePasswordAuthenticationToken(

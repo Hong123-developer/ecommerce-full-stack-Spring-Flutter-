@@ -13,12 +13,14 @@ import com.ecomerceshopeonline.ecomercewepapp.mapper.AddressMapper;
 import com.ecomerceshopeonline.ecomercewepapp.repository.AddressRepository;
 import com.ecomerceshopeonline.ecomercewepapp.repository.CartItemRepository;
 import com.ecomerceshopeonline.ecomercewepapp.repository.CartRepository;
+import com.ecomerceshopeonline.ecomercewepapp.repository.NotificationRepository;
 import com.ecomerceshopeonline.ecomercewepapp.repository.OrderRepository;
 import com.ecomerceshopeonline.ecomercewepapp.repository.PaymentRepository;
 import com.ecomerceshopeonline.ecomercewepapp.repository.RefreshTokenRepository;
 import com.ecomerceshopeonline.ecomercewepapp.repository.UserRepository;
 import com.ecomerceshopeonline.ecomercewepapp.repository.VerificationCodeRepository;
 import com.ecomerceshopeonline.ecomercewepapp.service.AdminCustomerService;
+import com.ecomerceshopeonline.ecomercewepapp.service.ProductReviewService;
 import com.ecomerceshopeonline.ecomercewepapp.service.RefreshTokenService;
 import com.ecomerceshopeonline.ecomercewepapp.util.DailySeries;
 import lombok.RequiredArgsConstructor;
@@ -49,6 +51,8 @@ public class AdminCustomerServiceImpl implements AdminCustomerService {
     private final PaymentRepository paymentRepository;
     private final RefreshTokenRepository refreshTokenRepository;
     private final VerificationCodeRepository verificationCodeRepository;
+    private final NotificationRepository notificationRepository;
+    private final ProductReviewService productReviewService;
 
     @Override
     @Transactional(readOnly = true)
@@ -114,11 +118,14 @@ public class AdminCustomerServiceImpl implements AdminCustomerService {
 
         // Children first: every FK to users is NO ACTION, and cart_items references carts.
         verificationCodeRepository.bulkDeleteByUserId(customerId);
+        notificationRepository.bulkDeleteByUserId(customerId);
         refreshTokenRepository.bulkDeleteByUserId(customerId);
         cartItemRepository.bulkDeleteByUserId(customerId);
         cartRepository.bulkDeleteByUserId(customerId);
         addressRepository.bulkDeleteByUserId(customerId);
         paymentRepository.bulkDeleteByUserId(customerId);
+        // Only possible after their orders were wiped in Settings > Data; recomputes those products' ratings.
+        productReviewService.deleteAllByUser(customerId);
         userRepository.deleteRoleLinks(customerId);
         userRepository.bulkDeleteById(customerId);
 

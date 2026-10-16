@@ -82,7 +82,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
         "app.payway.api-key=" + CardPaymentIntegrationTest.API_KEY,
         "app.payway.callback-url=" + CardPaymentIntegrationTest.CALLBACK,
         "app.payway.frontend-url=http://localhost:5173",
-        "app.payway.lifetime-minutes=30"
+        "app.payway.lifetime-minutes=30",
+        "app.payway.view-type=popup"
 })
 class CardPaymentIntegrationTest {
 
@@ -175,11 +176,14 @@ class CardPaymentIntegrationTest {
                 .andExpect(jsonPath("$.data.cardCheckout.method").value("POST"))
                 .andExpect(jsonPath("$.data.cardCheckout.action")
                         .value(BASE + "/api/payment-gateway/v1/payments/purchase"))
+                .andExpect(jsonPath("$.data.cardCheckout.display").value("popup"))
                 .andExpect(jsonPath("$.data.khqr").doesNotExist())
                 .andReturn().getResponse().getContentAsString();
         assertThat(body).doesNotContain(API_KEY);
 
         JsonNode data = objectMapper.readTree(body).get("data");
+        assertThat(data.get("cardCheckout").propertyNames())
+                .containsExactlyInAnyOrder("action", "method", "display", "fields");
         JsonNode fields = data.get("cardCheckout").get("fields");
         Order order = orderRepository.findById(orderId).orElseThrow();
         String tranId = fields.get("tran_id").asString();
@@ -196,17 +200,23 @@ class CardPaymentIntegrationTest {
         assertThat(data.get("gatewayTranId").asString()).isEqualTo(tranId);
         assertThat(fields.get("return_url").asString())
                 .isEqualTo(Base64.getEncoder().encodeToString(CALLBACK.getBytes(StandardCharsets.UTF_8)));
+        // Popup: PayWay's iframe comes back to the framed payment page, which closes the popup.
         assertThat(fields.get("continue_success_url").asString())
-                .isEqualTo("http://localhost:5173/payment/" + orderId + "?from=card");
+                .isEqualTo("http://localhost:5173/payment/" + orderId + "?from=card&frame=1");
+        assertThat(fields.get("cancel_url").asString())
+                .isEqualTo("http://localhost:5173/payment/" + orderId + "?from=card&frame=1&cancelled=1");
+        assertThat(fields.get("view_type").asString()).isEqualTo("popup");
         assertThat(fields.get("return_params").asString()).isEqualTo(order.getOrderNumber());
         String items = new String(Base64.getDecoder().decode(fields.get("items").asString()),
                 StandardCharsets.UTF_8);
         assertThat(items).contains("\"quantity\":2").contains("\"price\":25.00");
 
-        // Posted in the documented order, hash last; the hash recomputed independently.
+        // Posted in the documented order, then the unsigned view_type, hash last; the hash
+        // recomputed independently from the documented fields only.
         List<String> names = new ArrayList<>(fields.propertyNames());
         assertThat(names.getLast()).isEqualTo("hash");
-        List<String> hashed = names.subList(0, names.size() - 1);
+        assertThat(names.get(names.size() - 2)).isEqualTo("view_type");
+        List<String> hashed = names.subList(0, names.size() - 2);
         assertThat(hashed).isEqualTo(PayWayHash.PURCHASE_HASH_FIELDS.stream()
                 .filter(hashed::contains).toList());
         StringBuilder b4hash = new StringBuilder();

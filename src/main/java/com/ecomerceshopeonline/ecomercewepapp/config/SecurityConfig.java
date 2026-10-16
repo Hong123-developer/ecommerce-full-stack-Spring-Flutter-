@@ -67,6 +67,9 @@ public class SecurityConfig {
                         .requestMatchers("/", "/index.html", "/*.html", "/favicon.ico").permitAll()
                         // browsing the catalogue does not require an account
                         .requestMatchers(HttpMethod.GET, "/api/v1/categories/**").permitAll()
+                        // "may I review this?" is about the signed-in shopper - must precede the rule below
+                        .requestMatchers(HttpMethod.GET, "/api/v1/products/*/reviews/me").authenticated()
+                        // includes a product's reviews and their summary
                         .requestMatchers(HttpMethod.GET, "/api/v1/products/**").permitAll()
                         // the home-page hero carousel is part of the public storefront too
                         .requestMatchers(HttpMethod.GET, "/api/v1/hero-slides/**").permitAll()

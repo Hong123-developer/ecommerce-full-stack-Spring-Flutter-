@@ -1,6 +1,7 @@
 package com.ecomerceshopeonline.ecomercewepapp.service.impl;
 
 import com.ecomerceshopeonline.ecomercewepapp.dto.request.CategoryRequest;
+import com.ecomerceshopeonline.ecomercewepapp.dto.request.MoveDirection;
 import com.ecomerceshopeonline.ecomercewepapp.dto.response.CategoryResponse;
 import com.ecomerceshopeonline.ecomercewepapp.dto.response.PageResponse;
 import com.ecomerceshopeonline.ecomercewepapp.entity.Category;
@@ -11,7 +12,9 @@ import com.ecomerceshopeonline.ecomercewepapp.repository.CategoryRepository;
 import com.ecomerceshopeonline.ecomercewepapp.repository.ProductRepository;
 import com.ecomerceshopeonline.ecomercewepapp.service.CategoryService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -27,7 +30,7 @@ public class CategoryServiceImpl implements CategoryService {
     @Transactional(readOnly = true)
     public PageResponse<CategoryResponse> browse(Pageable pageable) {
         return PageResponse.from(
-                categoryRepository.findByEnabledTrue(pageable), categoryMapper::toResponse);
+                categoryRepository.findByEnabledTrue(withTiebreaker(pageable)), categoryMapper::toResponse);
     }
 
     @Override
@@ -44,7 +47,7 @@ public class CategoryServiceImpl implements CategoryService {
     @Override
     @Transactional(readOnly = true)
     public PageResponse<CategoryResponse> listAll(Pageable pageable) {
-        return PageResponse.from(categoryRepository.findAll(pageable), categoryMapper::toResponse);
+        return PageResponse.from(categoryRepository.findAll(withTiebreaker(pageable)), categoryMapper::toResponse);
     }
 
     @Override
@@ -60,8 +63,10 @@ public class CategoryServiceImpl implements CategoryService {
         if (categoryRepository.existsByName(name)) {
             throw new ConflictException("A category named '" + name + "' already exists");
         }
-        return categoryMapper.toResponse(
-                categoryRepository.save(categoryMapper.toEntity(request)));
+        Category category = categoryMapper.toEntity(request);
+        // A new category goes to the end of the order the admin has set.
+        category.setSortOrder(categoryRepository.findMaxSortOrder() + 1);
+        return categoryMapper.toResponse(categoryRepository.save(category));
     }
 
     @Override
@@ -87,6 +92,14 @@ public class CategoryServiceImpl implements CategoryService {
 
     @Override
     @Transactional
+    public CategoryResponse move(Long id, MoveDirection direction) {
+        DisplayOrder.move(categoryRepository.findDisplayOrder(), id, direction, "Category",
+                categoryRepository::updateSortOrder);
+        return categoryMapper.toResponse(require(id));
+    }
+
+    @Override
+    @Transactional
     public void delete(Long id) {
         Category category = require(id);
         if (productRepository.existsByCategoryId(id)) {
@@ -101,5 +114,19 @@ public class CategoryServiceImpl implements CategoryService {
     private Category require(Long id) {
         return categoryRepository.findById(id)
                 .orElseThrow(() -> ResourceNotFoundException.of("Category", id));
+    }
+
+    /**
+     * Ends every sort with the (unique) name so categories that tie on the requested key -
+     * such as the shared sortOrder 0 of categories from before ordering existed - keep one
+     * order across pages: alphabetical, as the listings were before.
+     */
+    private static Pageable withTiebreaker(Pageable pageable) {
+        Sort sort = pageable.getSort();
+        if (pageable.isUnpaged() || sort.getOrderFor("name") != null || sort.getOrderFor("id") != null) {
+            return pageable;
+        }
+        return PageRequest.of(pageable.getPageNumber(), pageable.getPageSize(),
+                sort.and(Sort.by(Sort.Direction.ASC, "name")));
     }
 }

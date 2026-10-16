@@ -1,5 +1,6 @@
 package com.ecomerceshopeonline.ecomercewepapp.controller.admin;
 
+import com.ecomerceshopeonline.ecomercewepapp.dto.request.MoveDirection;
 import com.ecomerceshopeonline.ecomercewepapp.dto.request.ProductRequest;
 import com.ecomerceshopeonline.ecomercewepapp.dto.response.ApiResponse;
 import com.ecomerceshopeonline.ecomercewepapp.dto.response.PageResponse;
@@ -22,10 +23,13 @@ public class AdminProductController {
 
     private final ProductService productService;
 
-    /** Unlike the public endpoint, this includes disabled products. */
+    /**
+     * Unlike the public endpoint, this includes disabled products. Defaults to the display
+     * order set by {@link #move}; ties fall back to the newest product.
+     */
     @GetMapping
     public ApiResponse<PageResponse<ProductResponse>> listAll(
-            @PageableDefault(size = 20, sort = "id", direction = Sort.Direction.DESC)
+            @PageableDefault(size = 20, sort = "sortOrder", direction = Sort.Direction.ASC)
             Pageable pageable) {
         return ApiResponse.ok(productService.listAll(pageable));
     }
@@ -52,6 +56,14 @@ public class AdminProductController {
                                                    @RequestParam boolean enabled) {
         return ApiResponse.ok(enabled ? "Product enabled" : "Product disabled",
                 productService.setEnabled(id, enabled));
+    }
+
+    /** {@code ?direction=UP|DOWN} - one step in the display order the shop lists products in. */
+    @PatchMapping("/{id}/move")
+    public ApiResponse<ProductResponse> move(@PathVariable Long id,
+                                             @RequestParam MoveDirection direction) {
+        return ApiResponse.ok(direction == MoveDirection.UP ? "Product moved up" : "Product moved down",
+                productService.move(id, direction));
     }
 
     @DeleteMapping("/{id}")

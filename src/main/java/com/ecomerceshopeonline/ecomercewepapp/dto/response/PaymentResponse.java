@@ -45,10 +45,15 @@ public record PaymentResponse(
      * {@code <form method="{method}" action="{action}">} with one hidden input per entry of
      * {@code fields} (names and values exactly as given, in this order) and submit it.
      * Card details are typed on the provider's page; they never pass through this API.
+     * <p>
+     * {@code display} says where that page goes: {@code "popup"} - post the form into a
+     * secure popup over the shop (PayWay's own popup script for PayWay, otherwise an iframe
+     * in a modal); {@code "redirect"} - submit it in the same tab.
      */
     public record CardCheckout(
             String action,
             String method,
+            String display,
             Map<String, String> fields
     ) {
     }

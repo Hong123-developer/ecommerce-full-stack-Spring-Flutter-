@@ -23,7 +23,8 @@ public class CategoryController {
 
     @GetMapping
     public ApiResponse<PageResponse<CategoryResponse>> browse(
-            @PageableDefault(size = 20, sort = "name", direction = Sort.Direction.ASC)
+            // The display order set in admin; ties fall back to the name.
+            @PageableDefault(size = 20, sort = "sortOrder", direction = Sort.Direction.ASC)
             Pageable pageable) {
         return ApiResponse.ok(categoryService.browse(pageable));
     }

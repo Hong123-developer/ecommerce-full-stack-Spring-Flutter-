@@ -53,6 +53,10 @@ public interface UserRepository extends JpaRepository<User, Long> {
     @Query("SELECT COUNT(DISTINCT u) FROM User u JOIN u.roles r WHERE r.name = :roleName")
     long countByRole(@Param("roleName") RoleName roleName);
 
+    /** Who receives admin notifications: every enabled account with the role. */
+    @Query("SELECT DISTINCT u FROM User u JOIN u.roles r WHERE r.name = :roleName AND u.enabled = true")
+    List<User> findEnabledByRole(@Param("roleName") RoleName roleName);
+
     /** New accounts of one role since a moment - administrators are not "new customers". */
     @Query("""
             SELECT COUNT(DISTINCT u) FROM User u JOIN u.roles r

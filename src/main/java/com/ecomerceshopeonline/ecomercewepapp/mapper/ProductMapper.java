@@ -9,6 +9,8 @@ import com.ecomerceshopeonline.ecomercewepapp.entity.Product;
 import com.ecomerceshopeonline.ecomercewepapp.entity.ProductVariant;
 import org.springframework.stereotype.Component;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -62,6 +64,11 @@ public class ProductMapper {
                         .map(this::toVariantResponse)
                         .toList(),
                 product.isEnabled(),
+                product.getRatingAverage() == null ? BigDecimal.ZERO : product.getRatingAverage(),
+                product.getRatingCount(),
+                product.getShopRating(),
+                // A note without stars means nothing to a shopper; the admin view keeps it editable.
+                includeDisabledVariants || product.getShopRating() != null ? product.getShopRatingLabel() : null,
                 product.getCreatedAt(),
                 product.getUpdatedAt());
     }
@@ -77,6 +84,8 @@ public class ProductMapper {
                 .imageUrl(request.imageUrl())
                 .galleryUrls(cleanGallery(request.galleryUrls()))
                 .enabled(request.enabled() == null || request.enabled())
+                .shopRating(shopRatingOrNull(request.shopRating()))
+                .shopRatingLabel(blankToNull(request.shopRatingLabel()))
                 .build();
     }
 
@@ -96,6 +105,14 @@ public class ProductMapper {
         if (request.enabled() != null) {
             target.setEnabled(request.enabled());
         }
+        // Null = a client that doesn't know about the shop rating (status toggles, the wizard,
+        // the variants editor...) or isn't changing it: keep it. 0 / "" clear it.
+        if (request.shopRating() != null) {
+            target.setShopRating(shopRatingOrNull(request.shopRating()));
+        }
+        if (request.shopRatingLabel() != null) {
+            target.setShopRatingLabel(blankToNull(request.shopRatingLabel()));
+        }
     }
 
     /** Copies a request onto a new or existing variant. Price/stock sync is the service's job. */
@@ -111,6 +128,11 @@ public class ProductMapper {
 
     private static String blankToNull(String value) {
         return value == null || value.isBlank() ? null : value.trim();
+    }
+
+    /** 0 means "no shop rating"; anything else was already checked to be a half-star value. */
+    private static BigDecimal shopRatingOrNull(BigDecimal value) {
+        return value == null || value.signum() == 0 ? null : value.setScale(1, RoundingMode.HALF_UP);
     }
 
     /** Trimmed, de-duplicated, in the order given. */

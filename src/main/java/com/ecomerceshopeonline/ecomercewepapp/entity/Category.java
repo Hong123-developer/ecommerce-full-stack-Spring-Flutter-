@@ -6,6 +6,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.experimental.SuperBuilder;
+import org.hibernate.annotations.ColumnDefault;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -37,6 +38,16 @@ public class Category extends BaseEntity {
     @Column(name = "enabled", nullable = false)
     @Builder.Default
     private boolean enabled = true;
+
+    /**
+     * Display position set from the admin Categories page (move up / move down): lower comes
+     * first. Equal values fall back to the name, which is how every category created before
+     * ordering existed starts out (all 0, so alphabetical). New categories go to the end.
+     */
+    @Column(name = "sort_order", nullable = false)
+    @ColumnDefault("0")
+    @Builder.Default
+    private int sortOrder = 0;
 
     @OneToMany(mappedBy = "category")
     @Builder.Default

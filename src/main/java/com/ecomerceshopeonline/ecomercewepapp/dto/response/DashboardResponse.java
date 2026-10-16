@@ -15,8 +15,18 @@ public record DashboardResponse(
         List<TopProduct> topProducts,
         /** Daily series for the charts, oldest first. */
         List<DailyPoint> revenueByDay,
-        List<DailyCount> registrationsByDay
+        List<DailyCount> registrationsByDay,
+        Reviews reviews
 ) {
+
+    /**
+     * @param averageRating average stars over every visible review in the shop, one decimal; 0 without any
+     * @param total         every review, hidden ones included
+     * @param hidden        reviews an admin hid
+     * @param newInPeriod   reviews written in the dashboard's window ({@code days})
+     */
+    public record Reviews(BigDecimal averageRating, long total, long hidden, long newInPeriod) {
+    }
 
     public record Revenue(
             BigDecimal total,

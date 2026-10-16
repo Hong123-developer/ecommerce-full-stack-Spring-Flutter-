@@ -17,6 +17,7 @@ import com.ecomerceshopeonline.ecomercewepapp.mapper.OrderMapper;
 import com.ecomerceshopeonline.ecomercewepapp.repository.*;
 import com.ecomerceshopeonline.ecomercewepapp.service.CardPaymentGateway;
 import com.ecomerceshopeonline.ecomercewepapp.service.CartService;
+import com.ecomerceshopeonline.ecomercewepapp.service.NotificationService;
 import com.ecomerceshopeonline.ecomercewepapp.service.OrderService;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.LockModeType;
@@ -72,6 +73,7 @@ public class OrderServiceImpl implements OrderService {
     private final OrderMapper orderMapper;
     private final AppProperties properties;
     private final CardPaymentGateway cardPaymentGateway;
+    private final NotificationService notificationService;
     private final SecureRandom secureRandom = new SecureRandom();
 
     @PersistenceContext
@@ -176,6 +178,7 @@ public class OrderServiceImpl implements OrderService {
                 .build();
         paymentRepository.save(payment);
         order.setPayment(payment);
+        notificationService.orderPlaced(order);
 
         cartService.clear(userId);
         log.info("Order {} created for user {} ({} items, {} via '{}', total {})",
@@ -297,6 +300,7 @@ public class OrderServiceImpl implements OrderService {
                     "This order has already been paid. Please contact us to cancel it and arrange a refund.");
         }
         applyCancellation(order, PaymentStatus.CANCELLED);
+        notificationService.orderCancelledByCustomer(order);
         return orderMapper.toResponse(order, false);
     }
 
@@ -313,6 +317,7 @@ public class OrderServiceImpl implements OrderService {
             return false;
         }
         applyCancellation(order, PaymentStatus.EXPIRED);
+        notificationService.orderExpired(order);
         log.info("Order {} expired unpaid ({}), stock restored",
                 order.getOrderNumber(), payment.getPaymentMethod());
         return true;
@@ -364,6 +369,7 @@ public class OrderServiceImpl implements OrderService {
             }
             orderRepository.save(order);
         }
+        notificationService.orderStatusChanged(order);
         return orderMapper.toResponse(order, true);
     }
 

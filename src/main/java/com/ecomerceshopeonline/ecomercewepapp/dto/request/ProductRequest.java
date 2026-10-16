@@ -60,12 +60,28 @@ public record ProductRequest(
          * top-level price / stockQuantity are ignored.
          */
         @Size(max = ProductRequest.MAX_VARIANTS, message = "A product can have at most 100 variants")
-        List<@NotNull(message = "Variant cannot be null") @Valid VariantRequest> variants
+        List<@NotNull(message = "Variant cannot be null") @Valid VariantRequest> variants,
+
+        /**
+         * The shop's own star score, shown to shoppers as "Shop rating" and never mixed into
+         * customer reviews: 0.5 to 5 in half stars. 0 removes it. Null on update means
+         * "unchanged" (so a client that doesn't know about it can't wipe it); null on create = none.
+         */
+        @ShopRatingValue
+        BigDecimal shopRating,
+
+        /**
+         * Short note shown next to the shop rating, e.g. "Rated on our Facebook page". Trimmed.
+         * Null on update means "unchanged"; blank clears it.
+         */
+        @Size(max = ProductRequest.MAX_SHOP_RATING_LABEL, message = "Shop rating label must be at most 60 characters")
+        String shopRatingLabel
 ) {
 
     public static final int MAX_GALLERY = 8;
     public static final int MAX_OPTION_NAMES = 3;
     public static final int MAX_VARIANTS = 100;
+    public static final int MAX_SHOP_RATING_LABEL = 60;
 
     /**
      * An in-app path (not "//host" or "/\\host") or an absolute http(s) URL. Leading

@@ -7,6 +7,7 @@ import com.ecomerceshopeonline.ecomercewepapp.entity.enums.RoleName;
 import com.ecomerceshopeonline.ecomercewepapp.repository.OrderRepository;
 import com.ecomerceshopeonline.ecomercewepapp.repository.PaymentRepository;
 import com.ecomerceshopeonline.ecomercewepapp.repository.ProductRepository;
+import com.ecomerceshopeonline.ecomercewepapp.repository.ProductReviewRepository;
 import com.ecomerceshopeonline.ecomercewepapp.repository.UserRepository;
 import com.ecomerceshopeonline.ecomercewepapp.service.StatisticsService;
 import com.ecomerceshopeonline.ecomercewepapp.util.DailySeries;
@@ -16,6 +17,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDateTime;
 import java.util.EnumMap;
 import java.util.List;
@@ -32,6 +34,7 @@ public class StatisticsServiceImpl implements StatisticsService {
     private final PaymentRepository paymentRepository;
     private final UserRepository userRepository;
     private final ProductRepository productRepository;
+    private final ProductReviewRepository reviewRepository;
 
     @Override
     @Transactional(readOnly = true)
@@ -79,6 +82,19 @@ public class StatisticsServiceImpl implements StatisticsService {
                         productRepository.countLowStock(LOW_STOCK_THRESHOLD)),
                 topProducts,
                 DailySeries.points(paymentRepository.revenueByDay(PaymentStatus.PAID, since)),
-                DailySeries.counts(userRepository.registrationsByDay(RoleName.ROLE_CUSTOMER, since)));
+                DailySeries.counts(userRepository.registrationsByDay(RoleName.ROLE_CUSTOMER, since)),
+                reviews(since));
+    }
+
+    private DashboardResponse.Reviews reviews(LocalDateTime since) {
+        Double average = reviewRepository.averageVisibleRating();
+        long hidden = reviewRepository.countByVisible(false);
+        return new DashboardResponse.Reviews(
+                average == null
+                        ? BigDecimal.ZERO.setScale(1)
+                        : BigDecimal.valueOf(average).setScale(1, RoundingMode.HALF_UP),
+                reviewRepository.countByVisible(true) + hidden,
+                hidden,
+                reviewRepository.countByCreatedAtAfter(since));
     }
 }

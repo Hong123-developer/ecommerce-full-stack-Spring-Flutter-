@@ -19,6 +19,7 @@ import com.ecomerceshopeonline.ecomercewepapp.repository.PaymentRepository;
 import com.ecomerceshopeonline.ecomercewepapp.service.BakongClient;
 import com.ecomerceshopeonline.ecomercewepapp.service.CardPaymentGateway;
 import com.ecomerceshopeonline.ecomercewepapp.service.CardPaymentGateway.CardTransactionResult;
+import com.ecomerceshopeonline.ecomercewepapp.service.NotificationService;
 import com.ecomerceshopeonline.ecomercewepapp.service.OrderService;
 import com.ecomerceshopeonline.ecomercewepapp.service.PaymentService;
 import com.ecomerceshopeonline.ecomercewepapp.util.BankNameResolver;
@@ -62,6 +63,7 @@ public class PaymentServiceImpl implements PaymentService {
     private final AppProperties properties;
     private final CardPaymentGateway cardGateway;
     private final OrderService orderService;
+    private final NotificationService notificationService;
     private final PlatformTransactionManager transactionManager;
 
     @PersistenceContext
@@ -172,7 +174,7 @@ public class PaymentServiceImpl implements PaymentService {
         requireSettleable(payment);
 
         String transactionId = request == null ? null : blankToNull(request.transactionId());
-        settle(payment, transactionId);
+        settle(payment, transactionId, false);
         log.info("Payment {} manually verified by an administrator", paymentId);
         return paymentMapper.toResponse(payment, true);
     }
@@ -232,7 +234,8 @@ public class PaymentServiceImpl implements PaymentService {
         log.info("Card attempt {} started for order {} via {}",
                 tranId, order.getOrderNumber(), cardGateway.provider());
         return paymentMapper.toResponse(payment, false, null,
-                new PaymentResponse.CardCheckout(checkout.action(), checkout.method(), checkout.fields()));
+                new PaymentResponse.CardCheckout(checkout.action(), checkout.method(),
+                        checkout.display(), checkout.fields()));
     }
 
     /**
@@ -572,8 +575,16 @@ public class PaymentServiceImpl implements PaymentService {
 
     // ---------------------------------------------------------------- helpers
 
-    /** Marks the payment paid and moves the order out of PENDING. */
+    /** Marks the payment paid and moves the order out of PENDING; the admins hear about it. */
     private void settle(Payment payment, String transactionId) {
+        settle(payment, transactionId, true);
+    }
+
+    /**
+     * @param notifyAdmins false when an admin settles it by hand - they already know; the
+     *                     customer is always told
+     */
+    private void settle(Payment payment, String transactionId, boolean notifyAdmins) {
         payment.setPaymentStatus(PaymentStatus.PAID);
         payment.setPaidAt(LocalDateTime.now());
         if (transactionId != null && !transactionId.isBlank()) {
@@ -586,6 +597,7 @@ public class PaymentServiceImpl implements PaymentService {
             order.setStatus(OrderStatus.CONFIRMED);
             orderRepository.save(order);
         }
+        notificationService.paymentReceived(order, notifyAdmins);
     }
 
     private void requireSettleable(Payment payment) {

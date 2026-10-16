@@ -1,15 +1,18 @@
 package com.ecomerceshopeonline.ecomercewepapp.repository;
 
 import com.ecomerceshopeonline.ecomercewepapp.entity.Product;
+import jakarta.persistence.LockModeType;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.math.BigDecimal;
+import java.util.List;
 import java.util.Optional;
 
 @Repository
@@ -56,6 +59,41 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
 
     @Query("SELECT p FROM Product p JOIN FETCH p.category WHERE p.id = :id")
     Optional<Product> findByIdWithCategory(@Param("id") Long id);
+
+    // ---------- ratings (written by ProductReviewService only) ----------
+
+    /**
+     * Locks the product row before one of its reviews changes, so two concurrent review
+     * changes recompute the rating one after the other - the second sees the first's row.
+     */
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT p FROM Product p WHERE p.id = :id")
+    Optional<Product> findByIdForUpdate(@Param("id") Long id);
+
+    /**
+     * Stores a recomputed rating. A bulk update instead of a dirty entity, so a review does not
+     * move the product's updated_at. Not clearAutomatically - see {@link #incrementStock}.
+     */
+    @Modifying(flushAutomatically = true)
+    @Query("UPDATE Product p SET p.ratingAverage = :average, p.ratingCount = :count WHERE p.id = :productId")
+    int updateRating(@Param("productId") Long productId,
+                     @Param("average") BigDecimal average,
+                     @Param("count") int count);
+
+    // ---------- display order (admin move up / move down) ----------
+
+    /** Rows of [id, sortOrder] for every product, in display order - first product first. */
+    @Query("SELECT p.id, p.sortOrder FROM Product p ORDER BY p.sortOrder ASC, p.id DESC")
+    List<Object[]> findDisplayOrder();
+
+    /** The top slot's value, so a new product can go above it; 0 for an empty catalogue. */
+    @Query("SELECT COALESCE(MIN(p.sortOrder), 0) FROM Product p")
+    int findMinSortOrder();
+
+    /** Not clearAutomatically - callers load the moved product only after their updates. */
+    @Modifying
+    @Query("UPDATE Product p SET p.sortOrder = :sortOrder WHERE p.id = :id")
+    int updateSortOrder(@Param("id") Long id, @Param("sortOrder") int sortOrder);
 
     /**
      * Conditional stock decrement. Returns 0 when there was not enough stock, which lets the

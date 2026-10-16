@@ -100,6 +100,9 @@ public record AppProperties(
      *                        blank = no pushback, the payment page's polling settles instead
      * @param frontendUrl     where the shopper's browser returns to after paying
      * @param lifetimeMinutes how long one card attempt stays payable (PayWay minimum: 3)
+     * @param viewType        PayWay's {@code view_type}: {@code popup} (default when blank) shows
+     *                        the card page in a popup over the shop; {@code hosted_view} keeps
+     *                        the same-tab redirect to PayWay's page
      */
     public record Payway(
             String baseUrl,
@@ -107,7 +110,8 @@ public record AppProperties(
             String apiKey,
             String callbackUrl,
             String frontendUrl,
-            int lifetimeMinutes
+            int lifetimeMinutes,
+            String viewType
     ) {
         public boolean isConfigured() {
             return merchantId != null && !merchantId.isBlank()
@@ -120,7 +124,7 @@ public record AppProperties(
             return "Payway[baseUrl=" + baseUrl + ", merchantId=" + merchantId
                     + ", apiKey=" + (apiKey == null || apiKey.isBlank() ? "<blank>" : "<set>")
                     + ", callbackUrl=" + callbackUrl + ", frontendUrl=" + frontendUrl
-                    + ", lifetimeMinutes=" + lifetimeMinutes + "]";
+                    + ", lifetimeMinutes=" + lifetimeMinutes + ", viewType=" + viewType + "]";
         }
     }
 }

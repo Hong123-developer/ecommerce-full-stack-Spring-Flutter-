@@ -58,6 +58,15 @@ public class JwtService {
         return parseClaims(token).map(claims -> Long.valueOf(claims.getSubject()));
     }
 
+    /** Who a token was issued to: the user id and that account's email at the time. */
+    public record TokenIdentity(Long userId, String email) {
+    }
+
+    public Optional<TokenIdentity> extractIdentity(String token) {
+        return parseClaims(token).map(claims ->
+                new TokenIdentity(Long.valueOf(claims.getSubject()), claims.get("email", String.class)));
+    }
+
     private Optional<Claims> parseClaims(String token) {
         try {
             Claims claims = Jwts.parser()

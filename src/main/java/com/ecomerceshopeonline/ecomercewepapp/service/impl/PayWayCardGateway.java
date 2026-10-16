@@ -52,7 +52,11 @@ import java.util.Map;
  *   <li>Which Check Transaction amount to compare: {@code original_amount} (what was asked
  *       for) is used, falling back to {@code total_amount} / {@code payment_amount}.</li>
  *   <li>{@code tran_id} is digits only (the docs' examples are; letters are not documented).</li>
- *   <li>{@code view_type} is not sent: the form is a plain same-tab POST (hosted page).</li>
+ *   <li>{@code view_type} ({@code app.payway.view-type}): {@code popup} by default - the shop
+ *       loads PayWay's checkout2-0.js and PayWay shows its card form in a popup over the
+ *       checkout; it then sends the popup's iframe to the {@code frame=1} return URLs below.
+ *       {@code hosted_view} keeps the old plain same-tab POST, and {@code view_type} is then
+ *       not sent at all. {@code view_type} is not part of the purchase hash.</li>
  * </ul>
  */
 @Slf4j
@@ -60,6 +64,10 @@ import java.util.Map;
 public class PayWayCardGateway implements CardPaymentGateway {
 
     public static final String PROVIDER = "ABA PayWay";
+
+    /** PayWay's {@code view_type} values (Purchase API). */
+    public static final String VIEW_POPUP = "popup";
+    public static final String VIEW_HOSTED = "hosted_view";
 
     private static final String DEFAULT_BASE_URL = "https://checkout-sandbox.payway.com.kh";
     /** PayWay refuses a lifetime under 3 minutes (error 69). */
@@ -120,10 +128,16 @@ public class PayWayCardGateway implements CardPaymentGateway {
     @Override
     public CardCheckout createCheckout(Order order, Payment payment, String tranId) {
         requireConfigured();
+        boolean popup = isPopup();
         String currency = payment.getCurrency();
         String returnTo = trimTrailingSlash(blankToNull(config.frontendUrl()) == null
                 ? "http://localhost:5173" : config.frontendUrl().trim())
                 + "/payment/" + order.getId() + "?from=card";
+        // Popup: PayWay sends its iframe (inside our page) to these URLs; frame=1 makes the
+        // payment page there tell the checkout underneath and close, instead of opening the
+        // whole shop inside the popup.
+        String successUrl = popup ? returnTo + "&frame=1" : returnTo;
+        String cancelUrl = popup ? returnTo + "&frame=1&cancelled=1" : returnTo;
         String callback = blankToNull(config.callbackUrl());
 
         // Inserted in PayWayHash.PURCHASE_HASH_FIELDS order; blank values are left out.
@@ -139,15 +153,30 @@ public class PayWayCardGateway implements CardPaymentGateway {
         // Where PayWay POSTs its pushback; without it PayWay uses the profile's default, and
         // the payment page's polling settles the order anyway.
         put(fields, "return_url", callback == null ? null : PayWayHash.base64(callback.trim()));
-        put(fields, "cancel_url", returnTo);
-        put(fields, "continue_success_url", returnTo);
+        put(fields, "cancel_url", cancelUrl);
+        put(fields, "continue_success_url", successUrl);
         put(fields, "currency", currency);
         put(fields, "return_params", order.getOrderNumber());
         put(fields, "lifetime", String.valueOf(attemptLifetimeMinutes()));
-        fields.put("hash", PayWayHash.purchaseHash(fields, config.apiKey()));
+        // Signed before view_type is added: the docs leave view_type out of the hash.
+        String hash = PayWayHash.purchaseHash(fields, config.apiKey());
+        if (popup) {
+            fields.put("view_type", VIEW_POPUP);
+        }
+        fields.put("hash", hash);
 
         return new CardCheckout(baseUrl() + PayWayHash.PURCHASE_PATH, "POST",
+                popup ? CardCheckout.DISPLAY_POPUP : CardCheckout.DISPLAY_REDIRECT,
                 Collections.unmodifiableMap(fields));
+    }
+
+    /**
+     * {@code app.payway.view-type}: only {@code hosted_view} gives the old same-tab page;
+     * blank or anything else is the popup.
+     */
+    private boolean isPopup() {
+        String viewType = config == null ? null : blankToNull(config.viewType());
+        return viewType == null || !VIEW_HOSTED.equalsIgnoreCase(viewType.trim());
     }
 
     /** Base64 JSON of the order lines - shown on PayWay's page only, not validated against the amount. */

@@ -109,7 +109,9 @@ public class PaymentController {
     /**
      * Start paying an order. For KHQR the response carries {@code data.khqr.qrImage}
      * (a PNG data URI) and {@code data.khqr.md5}. For CARD it carries
-     * {@code data.cardCheckout} - the form to post to the card provider's hosted page.
+     * {@code data.cardCheckout} - the form to post to the card provider's hosted page, and
+     * {@code display} ("popup" or "redirect") saying whether to show that page in a popup
+     * over the shop or in the same tab.
      */
     @PostMapping("/orders/{orderId}")
     public ApiResponse<PaymentResponse> pay(@AuthenticationPrincipal CustomUserDetails principal,
