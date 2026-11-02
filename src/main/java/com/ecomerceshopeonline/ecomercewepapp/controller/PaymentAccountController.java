@@ -11,10 +11,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
-/**
- * The bank account shown on the payment page. Any signed-in user may read it (it is what a
- * shopper pays into); only admins change it.
- */
+
 @RestController
 @RequiredArgsConstructor
 public class PaymentAccountController {

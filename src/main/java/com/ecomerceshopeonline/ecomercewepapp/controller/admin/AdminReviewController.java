@@ -11,7 +11,6 @@ import org.springframework.data.web.PageableDefault;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
-/** Review moderation: list, hide / show, delete. Hiding takes the review out of the product's rating. */
 @RestController
 @RequestMapping("/api/v1/admin/reviews")
 @RequiredArgsConstructor

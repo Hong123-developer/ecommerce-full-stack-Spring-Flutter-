@@ -12,11 +12,6 @@ import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
 
-/**
- * Public catalogue browsing, searching and filtering. No authentication required.
- * <p>
- * Example: {@code /api/v1/products?search=shirt&categoryId=3&minPrice=5&maxPrice=50&page=0&size=20&sort=price,asc}
- */
 @RestController
 @RequestMapping("/api/v1/products")
 @RequiredArgsConstructor

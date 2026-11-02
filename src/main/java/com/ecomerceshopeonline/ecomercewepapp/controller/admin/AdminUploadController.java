@@ -11,10 +11,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
-/**
- * Image upload for the admin product form. The client uploads first, then sends the
- * returned {@code url} as {@code imageUrl} in the normal product create/update request.
- */
+
 @RestController
 @RequestMapping("/api/v1/admin/uploads")
 @RequiredArgsConstructor

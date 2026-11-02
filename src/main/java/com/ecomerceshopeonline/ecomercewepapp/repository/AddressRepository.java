@@ -19,11 +19,7 @@ public interface AddressRepository extends JpaRepository<Address, Long> {
 
     Optional<Address> findByIdAndUserId(Long id, Long userId);
 
-    /**
-     * Demotes every address for the user; the caller then promotes exactly one.
-     * Not {@code clearAutomatically} - the caller is holding the Address it is about to
-     * promote, and clearing the context would detach it.
-     */
+  
     @Modifying
     @Query("UPDATE Address a SET a.isDefault = false WHERE a.user.id = :userId")
     void clearDefaults(@Param("userId") Long userId);

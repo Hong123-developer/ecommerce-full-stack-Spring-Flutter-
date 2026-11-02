@@ -10,11 +10,6 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 
-/**
- * "How do you want to receive your order?" - the enabled delivery companies and store
- * pickup, with their fees, for the checkout page. No authentication required, so the cart
- * can show the fee before the shopper signs in.
- */
 @RestController
 @RequestMapping("/api/v1/delivery-options")
 @RequiredArgsConstructor

@@ -22,11 +22,6 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
 
     // ---------- customer ----------
 
-    /**
-     * List view. Payment is single-valued so join-fetching it is safe with pagination;
-     * line items are deliberately not fetched (a collection fetch would force Hibernate
-     * to paginate in memory).
-     */
     @Query(value = "SELECT o FROM Order o LEFT JOIN FETCH o.payment WHERE o.user.id = :userId",
             countQuery = "SELECT COUNT(o) FROM Order o WHERE o.user.id = :userId")
     Page<Order> findByUserWithPayment(@Param("userId") Long userId, Pageable pageable);

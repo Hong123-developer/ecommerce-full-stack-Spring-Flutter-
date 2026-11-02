@@ -15,11 +15,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
-/**
- * Category management. The whole {@code /api/v1/admin/**} tree already requires
- * ROLE_ADMIN in SecurityConfig; the class-level annotation states it locally too,
- * so moving the class cannot silently un-protect it.
- */
 @RestController
 @RequestMapping("/api/v1/admin/categories")
 @RequiredArgsConstructor

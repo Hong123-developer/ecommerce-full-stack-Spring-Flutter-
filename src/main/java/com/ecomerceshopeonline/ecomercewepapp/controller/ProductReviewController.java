@@ -16,16 +16,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
-/**
- * Star ratings and reviews.
- * <ul>
- *   <li>{@code GET /products/{id}/reviews?page=0&size=10&sort=newest|highest|lowest&rating=5} - public</li>
- *   <li>{@code GET /products/{id}/reviews/summary} - public</li>
- *   <li>{@code GET /products/{id}/reviews/me} - signed in: may I review it, and my review</li>
- *   <li>{@code POST /products/{id}/reviews} - a customer whose order with it was delivered</li>
- *   <li>{@code PUT|DELETE /reviews/{reviewId}} - the author only</li>
- * </ul>
- */
+
 @RestController
 @RequestMapping("/api/v1")
 @RequiredArgsConstructor

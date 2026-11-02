@@ -7,7 +7,6 @@ import java.util.List;
 
 public interface DeliveryOptionService {
 
-    /** Checkout choices - enabled options only, in display order. Small, so not paged. */
     List<DeliveryOptionResponse> browse();
 
     // --- admin ---

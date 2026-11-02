@@ -11,10 +11,6 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
 
-/**
- * The signed-in user's own notifications - customers and admins alike (the bell). Clients
- * poll {@code /unread-count}; it is one indexed COUNT.
- */
 @RestController
 @RequestMapping("/api/v1/notifications")
 @RequiredArgsConstructor

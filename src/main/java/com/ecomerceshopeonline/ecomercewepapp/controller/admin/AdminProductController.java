@@ -23,10 +23,6 @@ public class AdminProductController {
 
     private final ProductService productService;
 
-    /**
-     * Unlike the public endpoint, this includes disabled products. Defaults to the display
-     * order set by {@link #move}; ties fall back to the newest product.
-     */
     @GetMapping
     public ApiResponse<PageResponse<ProductResponse>> listAll(
             @PageableDefault(size = 20, sort = "sortOrder", direction = Sort.Direction.ASC)
