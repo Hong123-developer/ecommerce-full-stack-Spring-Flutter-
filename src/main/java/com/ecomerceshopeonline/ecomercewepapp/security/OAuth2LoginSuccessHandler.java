@@ -1,6 +1,5 @@
 package com.ecomerceshopeonline.ecomercewepapp.security;
 
-import com.ecomerceshopeonline.ecomercewepapp.config.AppProperties;
 import com.ecomerceshopeonline.ecomercewepapp.dto.response.AuthResponse;
 import com.ecomerceshopeonline.ecomercewepapp.entity.User;
 import com.ecomerceshopeonline.ecomercewepapp.entity.enums.VerificationPurpose;
@@ -36,7 +35,7 @@ public class OAuth2LoginSuccessHandler extends SimpleUrlAuthenticationSuccessHan
 
     private final UserRepository userRepository;
     private final AuthService authService;
-    private final AppProperties properties;
+    private final OAuth2AppRedirectResolver appRedirectResolver;
     private final VerificationCodeService verificationCodeService;
 
     /*
@@ -74,7 +73,7 @@ public class OAuth2LoginSuccessHandler extends SimpleUrlAuthenticationSuccessHan
         AuthResponse tokens = authService.issueTokensFor(user);
 
         String target = UriComponentsBuilder
-                .fromUriString(properties.oauth2().redirectUri())
+                .fromUriString(resolveRedirectUri(request))
                 .queryParam("accessToken", tokens.accessToken())
                 .queryParam("refreshToken", tokens.refreshToken())
                 .build().toUriString();
@@ -100,7 +99,7 @@ public class OAuth2LoginSuccessHandler extends SimpleUrlAuthenticationSuccessHan
                 : "google";
 
         UriComponentsBuilder builder = UriComponentsBuilder
-                .fromUriString(properties.oauth2().redirectUri())
+                .fromUriString(resolveRedirectUri(request))
                 .replacePath("/verify-email")
                 .replaceQuery(null)
                 .fragment(null)
@@ -127,11 +126,17 @@ public class OAuth2LoginSuccessHandler extends SimpleUrlAuthenticationSuccessHan
     private void redirectWithError(HttpServletRequest request, HttpServletResponse response,
                                    String message) throws IOException {
         String target = UriComponentsBuilder
-                .fromUriString(properties.oauth2().redirectUri())
+                .fromUriString(resolveRedirectUri(request))
                 .queryParam("error", message)
                 .encode()
                 .build().toUriString();
         clearAuthenticationAttributes(request);
         getRedirectStrategy().sendRedirect(request, response, target);
+    }
+
+    private String resolveRedirectUri(HttpServletRequest request) {
+        // Recorded when the sign-in started. The Referer is no use here: this request
+        // arrives from the provider's page, not from the front-end.
+        return appRedirectResolver.redirectUriFor(request);
     }
 }

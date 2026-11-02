@@ -33,7 +33,12 @@ public record ProductResponse(
         BigDecimal shopRating,
         /** Optional note for the shop rating; null when none (public views: whenever shopRating is). */
         String shopRatingLabel,
+        /** Total number of users who liked this product. */
+        long likeCount,
+        /** Whether the currently authenticated user has liked this product (false for anonymous). */
+        boolean liked,
         LocalDateTime createdAt,
         LocalDateTime updatedAt
 ) {
 }
+

@@ -11,6 +11,7 @@ import com.ecomerceshopeonline.ecomercewepapp.entity.enums.RoleName;
 import com.ecomerceshopeonline.ecomercewepapp.repository.DeliveryOptionRepository;
 import com.ecomerceshopeonline.ecomercewepapp.repository.OrderItemRepository;
 import com.ecomerceshopeonline.ecomercewepapp.repository.OrderRepository;
+import com.ecomerceshopeonline.ecomercewepapp.repository.OrderStatusHistoryRepository;
 import com.ecomerceshopeonline.ecomercewepapp.repository.PaymentRepository;
 import com.ecomerceshopeonline.ecomercewepapp.repository.ProductRepository;
 import com.ecomerceshopeonline.ecomercewepapp.repository.RoleRepository;
@@ -87,6 +88,7 @@ class DeliveryCheckoutIntegrationTest {
     @Autowired private DeliveryOptionRepository deliveryOptionRepository;
     @Autowired private OrderRepository orderRepository;
     @Autowired private OrderItemRepository orderItemRepository;
+    @Autowired private OrderStatusHistoryRepository orderStatusHistoryRepository;
     @Autowired private PaymentRepository paymentRepository;
     @Autowired private ProductRepository productRepository;
     @Autowired private StoreSettingsRepository storeSettingsRepository;
@@ -110,6 +112,7 @@ class DeliveryCheckoutIntegrationTest {
         dataSeeder.run(null);
         // Children first: orders refer to options, payments and items to orders.
         paymentRepository.deleteAllInBatch();
+        orderStatusHistoryRepository.deleteAllInBatch();
         orderItemRepository.deleteAllInBatch();
         orderRepository.deleteAllInBatch();
         deliveryOptionRepository.deleteAllInBatch();

@@ -45,6 +45,7 @@ public class OrderMapper {
                 order.getSubtotal(),
                 order.getDeliveryFee(),
                 order.getDiscount(),
+                order.getCouponCode(),
                 order.getTotalAmount(),
                 order.getShippingAddress(),
                 // getId() on the lazy reference reads the foreign key - no extra query.

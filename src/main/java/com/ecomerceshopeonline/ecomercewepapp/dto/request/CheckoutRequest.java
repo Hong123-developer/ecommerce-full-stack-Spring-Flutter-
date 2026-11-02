@@ -31,6 +31,10 @@ public record CheckoutRequest(
          */
         Long deliveryOptionId,
 
+        /** Optional promotion code applied to the server-calculated cart subtotal. */
+        @jakarta.validation.constraints.Size(max = 40, message = "Coupon code must be at most 40 characters")
+        String couponCode,
+
         @Size(max = 150, message = "Customer name must be at most 150 characters")
         String contactName,
 
@@ -44,6 +48,7 @@ public record CheckoutRequest(
     public CheckoutRequest {
         contactName = clean(contactName);
         contactPhone = clean(contactPhone);
+        couponCode = clean(couponCode);
         note = clean(note);
     }
 

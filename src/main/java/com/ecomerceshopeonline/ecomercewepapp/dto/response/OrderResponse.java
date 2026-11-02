@@ -23,6 +23,7 @@ public record OrderResponse(
         /** The chosen option's fee at checkout time. */
         BigDecimal deliveryFee,
         BigDecimal discount,
+        String couponCode,
         BigDecimal totalAmount,
         /** Delivery address snapshot, or "Pick up at store" (plus the store address) for pickup. */
         String shippingAddress,

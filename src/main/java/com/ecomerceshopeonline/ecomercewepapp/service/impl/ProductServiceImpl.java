@@ -16,19 +16,25 @@ import com.ecomerceshopeonline.ecomercewepapp.mapper.ProductMapper;
 import com.ecomerceshopeonline.ecomercewepapp.repository.CartItemRepository;
 import com.ecomerceshopeonline.ecomercewepapp.repository.CategoryRepository;
 import com.ecomerceshopeonline.ecomercewepapp.repository.OrderItemRepository;
+import com.ecomerceshopeonline.ecomercewepapp.repository.ProductLikeRepository;
 import com.ecomerceshopeonline.ecomercewepapp.repository.ProductRepository;
 import com.ecomerceshopeonline.ecomercewepapp.repository.ProductReviewRepository;
 import com.ecomerceshopeonline.ecomercewepapp.repository.ProductVariantRepository;
+import com.ecomerceshopeonline.ecomercewepapp.security.CustomUserDetails;
 import com.ecomerceshopeonline.ecomercewepapp.service.ProductService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -51,6 +57,7 @@ public class ProductServiceImpl implements ProductService {
     private final CartItemRepository cartItemRepository;
     private final OrderItemRepository orderItemRepository;
     private final ProductReviewRepository reviewRepository;
+    private final ProductLikeRepository likeRepository;
     private final ProductMapper productMapper;
     private final ProductVariantSync variantSync;
 
@@ -62,10 +69,20 @@ public class ProductServiceImpl implements ProductService {
         if (minPrice != null && maxPrice != null && minPrice.compareTo(maxPrice) > 0) {
             throw new BadRequestException("minPrice cannot be greater than maxPrice");
         }
-        return PageResponse.from(
-                productRepository.browse(blankToNull(search), categoryId, minPrice, maxPrice,
-                        withTiebreaker(withRatingSort(pageable))),
-                productMapper::toPublicResponse);
+        Page<Product> page = productRepository.browse(blankToNull(search), categoryId, minPrice, maxPrice,
+                withTiebreaker(withRatingSort(pageable)));
+
+        Long currentUserId = currentUserId();
+        List<Long> productIds = page.getContent().stream().map(Product::getId).toList();
+        Set<Long> likedIds = currentUserId != null && !productIds.isEmpty()
+                ? likeRepository.findLikedProductIds(currentUserId, productIds)
+                : Collections.emptySet();
+
+        return PageResponse.from(page, product -> {
+            long likeCount = likeRepository.countByProductId(product.getId());
+            boolean liked = likedIds.contains(product.getId());
+            return productMapper.toPublicResponse(product, likeCount, liked);
+        });
     }
 
     @Override
@@ -76,7 +93,10 @@ public class ProductServiceImpl implements ProductService {
             // Hidden products must look absent to shoppers, not "forbidden".
             throw ResourceNotFoundException.of("Product", id);
         }
-        return productMapper.toPublicResponse(product);
+        Long currentUserId = currentUserId();
+        long likeCount = likeRepository.countByProductId(id);
+        boolean liked = currentUserId != null && likeRepository.existsByUserIdAndProductId(currentUserId, id);
+        return productMapper.toPublicResponse(product, likeCount, liked);
     }
 
     @Override
@@ -100,6 +120,11 @@ public class ProductServiceImpl implements ProductService {
         if (productRepository.existsBySku(sku)) {
             throw new ConflictException("A product with SKU '" + sku + "' already exists");
         }
+        String name = request.name().trim();
+        if(productRepository.existsByNameIgnoreCase(name)){
+            throw new ConflictException("A Product with name "+name+ "Already exists");
+        }
+
         Category category = requireCategory(request.categoryId());
         List<String> optionNames = cleanOptionNames(request.optionNames());
         List<VariantRequest> variantRequests =
@@ -373,6 +398,15 @@ public class ProductServiceImpl implements ProductService {
 
     private String blankToNull(String value) {
         return value == null || value.isBlank() ? null : value.trim();
+    }
+
+    /** Returns the signed-in user's id, or null for anonymous requests. */
+    private Long currentUserId() {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth != null && auth.getPrincipal() instanceof CustomUserDetails details) {
+            return details.getId();
+        }
+        return null;
     }
 
     /**

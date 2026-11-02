@@ -4,6 +4,8 @@ import com.ecomerceshopeonline.ecomercewepapp.dto.request.CheckoutRequest;
 import com.ecomerceshopeonline.ecomercewepapp.dto.response.ApiResponse;
 import com.ecomerceshopeonline.ecomercewepapp.dto.response.OrderResponse;
 import com.ecomerceshopeonline.ecomercewepapp.dto.response.OrderSummaryResponse;
+import com.ecomerceshopeonline.ecomercewepapp.dto.response.OrderTrackingResponse;
+import com.ecomerceshopeonline.ecomercewepapp.dto.response.InvoiceResponse;
 import com.ecomerceshopeonline.ecomercewepapp.dto.response.PageResponse;
 import com.ecomerceshopeonline.ecomercewepapp.security.CustomUserDetails;
 import com.ecomerceshopeonline.ecomercewepapp.service.OrderService;
@@ -44,6 +46,18 @@ public class OrderController {
     public ApiResponse<OrderResponse> getOwn(@AuthenticationPrincipal CustomUserDetails principal,
                                              @PathVariable Long id) {
         return ApiResponse.ok(orderService.getOwn(principal.getId(), id));
+    }
+
+    @GetMapping("/{id}/tracking")
+    public ApiResponse<OrderTrackingResponse> tracking(@AuthenticationPrincipal CustomUserDetails principal,
+                                                       @PathVariable Long id) {
+        return ApiResponse.ok(orderService.trackingOwn(principal.getId(), id));
+    }
+
+    @GetMapping("/{id}/invoice")
+    public ApiResponse<InvoiceResponse> invoice(@AuthenticationPrincipal CustomUserDetails principal,
+                                                @PathVariable Long id) {
+        return ApiResponse.ok(orderService.invoiceOwn(principal.getId(), id));
     }
 
     @PatchMapping("/{id}/cancel")

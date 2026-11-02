@@ -31,6 +31,7 @@ public class SecurityConfig {
     private final CustomOidcUserService oidcUserService;
     private final OAuth2LoginSuccessHandler oAuth2LoginSuccessHandler;
     private final OAuth2LoginFailureHandler oAuth2LoginFailureHandler;
+    private final OAuth2AppRedirectResolver oAuth2AppRedirectResolver;
     private final AppProperties properties;
 
     @Bean
@@ -48,6 +49,8 @@ public class SecurityConfig {
                         .authenticationEntryPoint(authenticationEntryPoint)
                         .accessDeniedHandler(accessDeniedHandler))
                 .authorizeHttpRequests(auth -> auth
+                        // Preflight CORS requests
+                        .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         // --- public ---
                         // Listed one by one on purpose. A blanket "/api/v1/auth/**" would also
                         // expose /me, /change-password and /logout-all, whose handlers assume an
@@ -61,7 +64,7 @@ public class SecurityConfig {
                                 "/api/v1/auth/reset-password",
                                 "/api/v1/auth/refresh",
                                 "/api/v1/auth/logout").permitAll()
-                        .requestMatchers("/oauth2/**", "/login/**").permitAll()
+                        .requestMatchers("/oauth2/**", "/login/**", "/api/v1/dev/**").permitAll()
                         // /error must stay open or every failure turns into a confusing 401/redirect
                         .requestMatchers("/error").permitAll()
                         .requestMatchers("/", "/index.html", "/*.html", "/favicon.ico").permitAll()
@@ -69,6 +72,10 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/v1/categories/**").permitAll()
                         // "may I review this?" is about the signed-in shopper - must precede the rule below
                         .requestMatchers(HttpMethod.GET, "/api/v1/products/*/reviews/me").authenticated()
+                        // like toggle and status check need the signed-in shopper
+                        .requestMatchers(HttpMethod.POST, "/api/v1/products/*/like").authenticated()
+                        .requestMatchers(HttpMethod.GET, "/api/v1/products/*/like").authenticated()
+                        .requestMatchers(HttpMethod.GET, "/api/v1/me/likes").authenticated()
                         // includes a product's reviews and their summary
                         .requestMatchers(HttpMethod.GET, "/api/v1/products/**").permitAll()
                         // the home-page hero carousel is part of the public storefront too
@@ -88,6 +95,9 @@ public class SecurityConfig {
                         // --- everything else needs a signed-in user ---
                         .anyRequest().authenticated())
                 .oauth2Login(oauth -> oauth
+                        // Records which front-end started the sign-in (see OAuth2AppRedirectResolver)
+                        .authorizationEndpoint(endpoint -> endpoint
+                                .authorizationRequestResolver(oAuth2AppRedirectResolver))
                         .userInfoEndpoint(userInfo -> userInfo
                                 .userService(oAuth2UserService)        // Facebook (plain OAuth2)
                                 .oidcUserService(oidcUserService))     // Google ("openid" scope = OIDC)
@@ -101,10 +111,15 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        // Explicit origins, not "*" - a wildcard is rejected when credentials are allowed.
-        configuration.setAllowedOrigins(properties.cors().allowedOrigins());
+        // Allow localhost on any port (for Flutter web, React, etc.) and credentials
+        configuration.setAllowedOriginPatterns(List.of(
+                "http://localhost:*",
+                "http://127.0.0.1:*",
+                "http://10.0.2.2:*",
+                "*"
+        ));
         configuration.setAllowedMethods(
-                List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
+                List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS", "HEAD"));
         configuration.setAllowedHeaders(List.of("*"));
         configuration.setExposedHeaders(List.of("Authorization"));
         configuration.setAllowCredentials(true);

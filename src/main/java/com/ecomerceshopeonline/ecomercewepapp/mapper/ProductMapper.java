@@ -19,12 +19,17 @@ public class ProductMapper {
 
     /** Admin view: every variant, including disabled ones. */
     public ProductResponse toResponse(Product product) {
-        return toResponse(product, true);
+        return toResponse(product, true, 0, false);
     }
 
     /** Shopper view: disabled variants are left out. */
     public ProductResponse toPublicResponse(Product product) {
-        return toResponse(product, false);
+        return toResponse(product, false, 0, false);
+    }
+
+    /** Shopper view with like data. */
+    public ProductResponse toPublicResponse(Product product, long likeCount, boolean liked) {
+        return toResponse(product, false, likeCount, liked);
     }
 
     public VariantResponse toVariantResponse(ProductVariant variant) {
@@ -42,7 +47,8 @@ public class ProductMapper {
                 variant.isEnabled());
     }
 
-    private ProductResponse toResponse(Product product, boolean includeDisabledVariants) {
+    private ProductResponse toResponse(Product product, boolean includeDisabledVariants,
+                                       long likeCount, boolean liked) {
         Category category = product.getCategory();
         return new ProductResponse(
                 product.getId(),
@@ -69,6 +75,8 @@ public class ProductMapper {
                 product.getShopRating(),
                 // A note without stars means nothing to a shopper; the admin view keeps it editable.
                 includeDisabledVariants || product.getShopRating() != null ? product.getShopRatingLabel() : null,
+                likeCount,
+                liked,
                 product.getCreatedAt(),
                 product.getUpdatedAt());
     }
@@ -147,3 +155,4 @@ public class ProductMapper {
                 .toList());
     }
 }
+

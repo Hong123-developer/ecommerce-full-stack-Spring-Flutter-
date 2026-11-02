@@ -24,11 +24,9 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
 
     boolean existsByCategoryId(Long categoryId);
 
-    /**
-     * Public catalogue search. Every filter is optional - a null argument disables that clause.
-     * The category is join-fetched because every row is mapped with its category name, which
-     * would otherwise be one extra query per product.
-     */
+    boolean existsByNameIgnoreCase(String name);
+
+
     @Query(value = """
             SELECT p FROM Product p
             JOIN FETCH p.category c

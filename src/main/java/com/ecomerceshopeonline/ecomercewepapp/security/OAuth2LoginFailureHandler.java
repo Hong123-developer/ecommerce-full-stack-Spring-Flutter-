@@ -1,6 +1,5 @@
 package com.ecomerceshopeonline.ecomercewepapp.security;
 
-import com.ecomerceshopeonline.ecomercewepapp.config.AppProperties;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
@@ -18,7 +17,7 @@ import java.io.IOException;
 @RequiredArgsConstructor
 public class OAuth2LoginFailureHandler extends SimpleUrlAuthenticationFailureHandler {
 
-    private final AppProperties properties;
+    private final OAuth2AppRedirectResolver appRedirectResolver;
 
     @Override
     public void onAuthenticationFailure(HttpServletRequest request, HttpServletResponse response,
@@ -26,7 +25,7 @@ public class OAuth2LoginFailureHandler extends SimpleUrlAuthenticationFailureHan
         log.warn("Google sign-in failed: {}", exception.getMessage());
 
         String target = UriComponentsBuilder
-                .fromUriString(properties.oauth2().redirectUri())
+                .fromUriString(appRedirectResolver.redirectUriFor(request))
                 .queryParam("error", exception.getMessage())
                 .encode()
                 .build().toUriString();

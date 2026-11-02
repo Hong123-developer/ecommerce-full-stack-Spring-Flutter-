@@ -4,6 +4,8 @@ import com.ecomerceshopeonline.ecomercewepapp.config.AppProperties;
 import com.ecomerceshopeonline.ecomercewepapp.dto.request.CheckoutRequest;
 import com.ecomerceshopeonline.ecomercewepapp.dto.response.OrderResponse;
 import com.ecomerceshopeonline.ecomercewepapp.dto.response.OrderSummaryResponse;
+import com.ecomerceshopeonline.ecomercewepapp.dto.response.OrderTrackingResponse;
+import com.ecomerceshopeonline.ecomercewepapp.dto.response.InvoiceResponse;
 import com.ecomerceshopeonline.ecomercewepapp.dto.response.PageResponse;
 import com.ecomerceshopeonline.ecomercewepapp.entity.*;
 import com.ecomerceshopeonline.ecomercewepapp.entity.enums.DeliveryType;
@@ -17,6 +19,7 @@ import com.ecomerceshopeonline.ecomercewepapp.mapper.OrderMapper;
 import com.ecomerceshopeonline.ecomercewepapp.repository.*;
 import com.ecomerceshopeonline.ecomercewepapp.service.CardPaymentGateway;
 import com.ecomerceshopeonline.ecomercewepapp.service.CartService;
+import com.ecomerceshopeonline.ecomercewepapp.service.CouponService;
 import com.ecomerceshopeonline.ecomercewepapp.service.NotificationService;
 import com.ecomerceshopeonline.ecomercewepapp.service.OrderService;
 import jakarta.persistence.EntityManager;
@@ -74,6 +77,8 @@ public class OrderServiceImpl implements OrderService {
     private final AppProperties properties;
     private final CardPaymentGateway cardPaymentGateway;
     private final NotificationService notificationService;
+    private final CouponService couponService;
+    private final OrderStatusHistoryRepository orderStatusHistoryRepository;
     private final SecureRandom secureRandom = new SecureRandom();
 
     @PersistenceContext
@@ -125,6 +130,7 @@ public class OrderServiceImpl implements OrderService {
                 .contactName(destination.contactName())
                 .contactPhone(destination.contactPhone())
                 .customerNote(request.note())
+                .couponCode(request.couponCode() == null ? null : request.couponCode().trim().toUpperCase(java.util.Locale.ROOT))
                 .discount(BigDecimal.ZERO)
                 .subtotal(BigDecimal.ZERO)
                 .totalAmount(BigDecimal.ZERO)
@@ -165,8 +171,16 @@ public class OrderServiceImpl implements OrderService {
         reserveStock(cart.getItems());
 
         order.setSubtotal(subtotal);
+        CouponService.AppliedCoupon appliedCoupon = request.couponCode() == null
+                ? null : couponService.applyForCheckout(userId, request.couponCode(), subtotal);
+        if (appliedCoupon != null) {
+            order.setDiscount(appliedCoupon.discount());
+            order.setCouponCode(appliedCoupon.coupon().code());
+        }
         order.setTotalAmount(order.calculateTotal());
         orderRepository.save(order);
+        recordStatus(order, OrderStatus.PENDING, "Order placed");
+        couponService.recordUse(appliedCoupon, order);
 
         Payment payment = Payment.builder()
                 .order(order)
@@ -286,6 +300,42 @@ public class OrderServiceImpl implements OrderService {
     }
 
     @Override
+    @Transactional(readOnly = true)
+    public OrderTrackingResponse trackingOwn(Long userId, Long orderId) {
+        Order order = requireOwned(userId, orderId);
+        List<OrderStatusHistory> history = orderStatusHistoryRepository
+                .findByOrderIdOrderByCreatedAtAsc(orderId);
+        if (history.isEmpty()) {
+            history = List.of(OrderStatusHistory.builder()
+                    .status(order.getStatus())
+                    .note("Current order status")
+                    .createdAt(order.getCreatedAt())
+                    .build());
+        }
+        return new OrderTrackingResponse(order.getId(), order.getOrderNumber(), order.getStatus(),
+                history.stream()
+                        .map(event -> new OrderTrackingResponse.Event(
+                                event.getStatus(), event.getNote(), event.getCreatedAt()))
+                        .toList());
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public InvoiceResponse invoiceOwn(Long userId, Long orderId) {
+        Order order = requireOwned(userId, orderId);
+        Payment payment = order.getPayment();
+        return new InvoiceResponse(order.getId(), "INV-" + order.getOrderNumber(), order.getOrderNumber(),
+                order.getCreatedAt(), order.getShippingAddress(), order.getContactName(),
+                order.getContactPhone(), order.getSubtotal(), order.getDeliveryFee(), order.getDiscount(),
+                order.getTotalAmount(), order.getCouponCode(),
+                payment == null ? null : payment.getPaymentMethod(),
+                payment == null ? null : payment.getPaymentStatus(),
+                order.getItems().stream().map(item -> new InvoiceResponse.Line(
+                        item.getProductName(), item.getVariantLabel(), item.getSku(), item.getQuantity(),
+                        item.getUnitPrice(), item.getSubtotal())).toList());
+    }
+
+    @Override
     @Transactional
     public OrderResponse cancelOwn(Long userId, Long orderId) {
         Order order = requireOwned(userId, orderId);
@@ -357,6 +407,7 @@ public class OrderServiceImpl implements OrderService {
         if (status == OrderStatus.CANCELLED) {
             applyCancellation(order, PaymentStatus.CANCELLED);
         } else {
+            recordStatus(order, status, "Order status updated");
             order.setStatus(status);
             // Marking an order delivered settles a cash-on-delivery payment. A card payment is
             // only ever settled by the card provider's confirmation (or an explicit verify).
@@ -367,10 +418,16 @@ public class OrderServiceImpl implements OrderService {
                 order.getPayment().setPaidAt(LocalDateTime.now());
                 paymentRepository.save(order.getPayment());
             }
+
             orderRepository.save(order);
         }
         notificationService.orderStatusChanged(order);
         return orderMapper.toResponse(order, true);
+    }
+
+    private void recordStatus(Order order, OrderStatus status, String note) {
+        orderStatusHistoryRepository.save(OrderStatusHistory.builder()
+                .order(order).status(status).note(note).build());
     }
 
     // ---------------------------------------------------------------- helpers
@@ -467,6 +524,7 @@ public class OrderServiceImpl implements OrderService {
             }
         }
         order.setStatus(OrderStatus.CANCELLED);
+        recordStatus(order, OrderStatus.CANCELLED, "Order cancelled");
 
         Payment payment = order.getPayment();
         // FAILED is a card attempt that was declined - still unpaid, so it ends here too.
