@@ -2,6 +2,11 @@ name: ecomerce_shop
 description: "Premium E-Commerce Mobile App"
 publish_to: 'none'
 
+flutter_launcher_icons:
+  android: true
+  ios: false
+  image_path: "lib/assets/images/app_icon.png"
+
 version: 1.0.0+1
 
 environment:
@@ -35,6 +40,7 @@ dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^6.0.0
+  flutter_launcher_icons: ^0.14.4
 
 flutter:
   uses-material-design: true
