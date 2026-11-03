@@ -12,10 +12,6 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import java.time.LocalDateTime;
 
-/**
- * Shared {@code created_at} / {@code updated_at} columns for the tables that carry both.
- * Tables that only have {@code created_at} declare it themselves instead of extending this.
- */
 @Getter
 @Setter
 @SuperBuilder

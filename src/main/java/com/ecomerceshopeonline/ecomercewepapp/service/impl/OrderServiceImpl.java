@@ -150,7 +150,9 @@ public class OrderServiceImpl implements OrderService {
                         "Please choose an option for '" + product.getName() + "'. Remove it to continue.");
             }
 
-            BigDecimal unitPrice = variant == null ? product.getPrice() : variant.getPrice();
+            BigDecimal unitPrice = variant == null
+                    ? product.discountedPrice(product.getPrice())
+                    : product.discountedPrice(variant.getPrice());
             BigDecimal lineTotal = unitPrice.multiply(BigDecimal.valueOf(cartItem.getQuantity()));
             OrderItem item = OrderItem.builder()
                     .order(order)

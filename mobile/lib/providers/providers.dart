@@ -724,6 +724,8 @@ final wishlistPageProvider = FutureProvider<List<Product>>((ref) async {
         id: e['productId'] ?? 0,
         name: e['productName'] ?? '',
         price: (e['productPrice'] ?? 0).toDouble(),
+        originalPrice: (e['productPrice'] ?? 0).toDouble(),
+        discountPercent: 0,
         imageUrl: e['productImageUrl'],
         inStock: e['inStock'] ?? false,
         liked: e['liked'] ?? true,

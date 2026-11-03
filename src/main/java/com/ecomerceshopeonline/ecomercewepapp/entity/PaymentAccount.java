@@ -6,14 +6,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.experimental.SuperBuilder;
 
-/**
- * The bank account customers pay into, as the payment page shows it: "Pay to [account name],
- * ACLEDA Bank, USD [account number]". Display only - a KHQR code is still built from the Bakong
- * account id in {@code app.bakong.account-id}.
- * <p>
- * A singleton like {@link StoreSettings}: the id is always {@link #SINGLETON_ID}, and there is
- * no row until the admin saves one.
- */
+
 @Entity
 @Table(
         name = "payment_account",

@@ -12,6 +12,8 @@ import org.hibernate.annotations.ColumnDefault;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
+import java.time.LocalDateTime;
+import java.time.LocalDate;
 
 @Entity
 @Table(
@@ -52,6 +54,25 @@ public class Product extends BaseEntity {
 
     @Column(name = "price", nullable = false, precision = 12, scale = 2)
     private BigDecimal price;
+
+    @Column(name = "discount_percent", nullable = false)
+    @ColumnDefault("0")
+    @Builder.Default
+    private Integer discountPercent = 0;
+
+    @Column(name = "discount_days", nullable = false)
+    @ColumnDefault("0")
+    @Builder.Default
+    private Integer discountDays = 0;
+
+    @Column(name = "discount_expires_at")
+    private LocalDateTime discountExpiresAt;
+
+    @Column(name = "discount_start_date")
+    private LocalDate discountStartDate;
+
+    @Column(name = "discount_end_date")
+    private LocalDate discountEndDate;
 
     @Column(name = "stock_quantity", nullable = false)
     @Builder.Default
@@ -150,5 +171,23 @@ public class Product extends BaseEntity {
 
     public boolean isInStock(int requested) {
         return stockQuantity != null && stockQuantity >= requested;
+    }
+
+    public BigDecimal discountedPrice(BigDecimal originalPrice) {
+        if (originalPrice == null || !isDiscountActive()) {
+            return originalPrice;
+        }
+        return originalPrice
+                .multiply(BigDecimal.valueOf(100 - discountPercent))
+                .divide(BigDecimal.valueOf(100), 2, java.math.RoundingMode.HALF_UP);
+    }
+
+    public boolean isDiscountActive() {
+        return discountPercent != null && discountPercent > 0
+                && ((discountStartDate != null && discountEndDate != null
+                        && !LocalDate.now().isBefore(discountStartDate)
+                        && !LocalDate.now().isAfter(discountEndDate))
+                    || (discountStartDate == null && discountEndDate == null
+                        && (discountExpiresAt == null || discountExpiresAt.isAfter(LocalDateTime.now()))));
     }
 }

@@ -2,6 +2,7 @@ package com.ecomerceshopeonline.ecomercewepapp.service.impl;
 
 import com.ecomerceshopeonline.ecomercewepapp.dto.request.MoveDirection;
 import com.ecomerceshopeonline.ecomercewepapp.dto.request.ProductRequest;
+import com.ecomerceshopeonline.ecomercewepapp.dto.request.DiscountRequest;
 import com.ecomerceshopeonline.ecomercewepapp.dto.request.VariantRequest;
 import com.ecomerceshopeonline.ecomercewepapp.dto.response.PageResponse;
 import com.ecomerceshopeonline.ecomercewepapp.dto.response.ProductResponse;
@@ -101,9 +102,10 @@ public class ProductServiceImpl implements ProductService {
 
     @Override
     @Transactional(readOnly = true)
-    public PageResponse<ProductResponse> listAll(Pageable pageable) {
+    public PageResponse<ProductResponse> listAll(String search, Pageable pageable) {
         return PageResponse.from(
-                productRepository.findAllWithCategory(withTiebreaker(withRatingSort(pageable))),
+                productRepository.findAllWithCategory(blankToNull(search),
+                        withTiebreaker(withRatingSort(pageable))),
                 productMapper::toResponse);
     }
 
@@ -185,6 +187,25 @@ public class ProductServiceImpl implements ProductService {
         Product product = requireWithCategory(id);
         product.setEnabled(enabled);
         return productMapper.toResponse(productRepository.save(product));
+    }
+
+    @Override
+    @Transactional
+    public ProductResponse setDiscount(Long id, DiscountRequest request) {
+        Product product = requireWithCategory(id);
+        product.setDiscountPercent(request.discountPercent());
+        if (request.discountPercent() > 0
+                && (request.discountStartDate() == null || request.discountEndDate() == null)) {
+            throw new BadRequestException("Start date and end date are required for an active discount");
+        }
+        if (request.discountPercent() > 0
+                && request.discountEndDate().isBefore(request.discountStartDate())) {
+            throw new BadRequestException("End date cannot be before start date");
+        }
+        product.setDiscountStartDate(request.discountPercent() > 0 ? request.discountStartDate() : null);
+        product.setDiscountEndDate(request.discountPercent() > 0 ? request.discountEndDate() : null);
+        product.setDiscountExpiresAt(null);
+        return productMapper.toResponse(product);
     }
 
     @Override

@@ -1,6 +1,7 @@
 package com.ecomerceshopeonline.ecomercewepapp.controller.admin;
 
 import com.ecomerceshopeonline.ecomercewepapp.dto.request.MoveDirection;
+import com.ecomerceshopeonline.ecomercewepapp.dto.request.DiscountRequest;
 import com.ecomerceshopeonline.ecomercewepapp.dto.request.ProductRequest;
 import com.ecomerceshopeonline.ecomercewepapp.dto.response.ApiResponse;
 import com.ecomerceshopeonline.ecomercewepapp.dto.response.PageResponse;
@@ -25,9 +26,10 @@ public class AdminProductController {
 
     @GetMapping
     public ApiResponse<PageResponse<ProductResponse>> listAll(
+            @RequestParam(required = false) String search,
             @PageableDefault(size = 20, sort = "sortOrder", direction = Sort.Direction.ASC)
             Pageable pageable) {
-        return ApiResponse.ok(productService.listAll(pageable));
+        return ApiResponse.ok(productService.listAll(search, pageable));
     }
 
     @GetMapping("/{id}")
@@ -52,6 +54,12 @@ public class AdminProductController {
                                                    @RequestParam boolean enabled) {
         return ApiResponse.ok(enabled ? "Product enabled" : "Product disabled",
                 productService.setEnabled(id, enabled));
+    }
+
+    @PatchMapping("/{id}/discount")
+    public ApiResponse<ProductResponse> setDiscount(@PathVariable Long id,
+                                                    @Valid @RequestBody DiscountRequest request) {
+        return ApiResponse.ok("Product discount updated", productService.setDiscount(id, request));
     }
 
     /** {@code ?direction=UP|DOWN} - one step in the display order the shop lists products in. */

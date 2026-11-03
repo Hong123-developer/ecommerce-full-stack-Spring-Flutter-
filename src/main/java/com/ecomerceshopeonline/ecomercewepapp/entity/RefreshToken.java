@@ -36,7 +36,6 @@ public class RefreshToken {
     )
     private User user;
 
-    /** SHA-256 of the opaque token - the raw value only ever goes to the client. */
     @Column(name = "token_hash", nullable = false, length = 255)
     private String tokenHash;
 

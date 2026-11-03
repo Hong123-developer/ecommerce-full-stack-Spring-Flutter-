@@ -51,9 +51,11 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
                          Pageable pageable);
 
     /** Admin listing - includes disabled products. */
-    @Query(value = "SELECT p FROM Product p JOIN FETCH p.category",
-            countQuery = "SELECT COUNT(p) FROM Product p")
-    Page<Product> findAllWithCategory(Pageable pageable);
+    @Query(value = "SELECT p FROM Product p JOIN FETCH p.category " +
+            "WHERE (:search IS NULL OR LOWER(p.name) LIKE LOWER(CONCAT('%', CAST(:search AS String), '%')))",
+            countQuery = "SELECT COUNT(p) FROM Product p " +
+                    "WHERE (:search IS NULL OR LOWER(p.name) LIKE LOWER(CONCAT('%', CAST(:search AS String), '%')))")
+    Page<Product> findAllWithCategory(@Param("search") String search, Pageable pageable);
 
     @Query("SELECT p FROM Product p JOIN FETCH p.category WHERE p.id = :id")
     Optional<Product> findByIdWithCategory(@Param("id") Long id);

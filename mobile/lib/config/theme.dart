@@ -6,24 +6,23 @@ import 'package:google_fonts/google_fonts.dart';
 // Color Palette
 // ──────────────────────────────────────────────
 class AppColors {
-  // Primary gradient colors
-  static const Color primary = Color(0xFF6C5CE7);
-  static const Color primaryLight = Color(0xFFA29BFE);
-  static const Color primaryDark = Color(0xFF4A3FC2);
+  // Brand palette
+  static const Color primary = Color(0xFF5146D8);
+  static const Color primaryLight = Color(0xFF8B83F3);
+  static const Color primaryDark = Color(0xFF3930A8);
 
-  // Accent
-  static const Color accent = Color(0xFFFF6B6B);
-  static const Color accentLight = Color(0xFFFF8E8E);
+  static const Color accent = Color(0xFFF05D5E);
+  static const Color accentLight = Color(0xFFF58282);
 
-  // Background
-  static const Color background = Color(0xFFF8F9FE);
+  // Surfaces
+  static const Color background = Color(0xFFF7F8FC);
   static const Color surface = Colors.white;
-  static const Color surfaceVariant = Color(0xFFF0F0F8);
+  static const Color surfaceVariant = Color(0xFFEEF0F6);
 
   // Text
-  static const Color textPrimary = Color(0xFF2D3436);
-  static const Color textSecondary = Color(0xFF636E72);
-  static const Color textHint = Color(0xFFB2BEC3);
+  static const Color textPrimary = Color(0xFF1F2937);
+  static const Color textSecondary = Color(0xFF667085);
+  static const Color textHint = Color(0xFF98A2B3);
 
   // Status
   static const Color success = Color(0xFF00B894);
@@ -40,21 +39,21 @@ class AppColors {
   static const Color cancelled = Color(0xFFE74C3C);
 
   // Misc
-  static const Color divider = Color(0xFFEEF0F5);
-  static const Color shimmerBase = Color(0xFFE8E8F0);
-  static const Color shimmerHighlight = Color(0xFFF5F5FA);
+  static const Color divider = Color(0xFFE4E7EC);
+  static const Color shimmerBase = Color(0xFFE7E9F0);
+  static const Color shimmerHighlight = Color(0xFFF8F9FC);
   static const Color starFilled = Color(0xFFFFD700);
   static const Color starEmpty = Color(0xFFDFE6E9);
 
   // Gradients
   static const LinearGradient primaryGradient = LinearGradient(
-    colors: [primary, Color(0xFF8B7BF7)],
+    colors: [primary, Color(0xFF746BED)],
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
   );
 
   static const LinearGradient accentGradient = LinearGradient(
-    colors: [accent, Color(0xFFFF9A76)],
+    colors: [accent, Color(0xFFFF8A72)],
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
   );
@@ -73,16 +72,16 @@ enum AppThemeStyle {
   purple(
     id: 'purple',
     name: 'Royal Purple',
-    primary: Color(0xFF6C5CE7),
-    primaryLight: Color(0xFFA29BFE),
-    primaryDark: Color(0xFF4A3FC2),
-    accent: Color(0xFFFF6B6B),
-    drawerBackground: Color(0xFFF8F7FF),
-    appBarColor: Color(0xFF6C5CE7),
+    primary: Color(0xFF5146D8),
+    primaryLight: Color(0xFF8B83F3),
+    primaryDark: Color(0xFF3930A8),
+    accent: Color(0xFFF05D5E),
+    drawerBackground: Color(0xFFF7F6FF),
+    appBarColor: Color(0xFF5146D8),
     appBarTextColor: Colors.white,
     navActiveColor: Color(0xFF6C5CE7),
     headerGradient: LinearGradient(
-      colors: [Color(0xFF6C5CE7), Color(0xFF8B7BF7)],
+      colors: [Color(0xFF5146D8), Color(0xFF746BED)],
       begin: Alignment.topLeft,
       end: Alignment.bottomRight,
     ),
@@ -210,30 +209,58 @@ class AppTheme {
   static ThemeData get lightTheme => getTheme(AppThemeStyle.purple);
 
   static ThemeData getTheme(AppThemeStyle style) {
-    final surfaceColor = style.isDark ? const Color(0xFF1E293B) : AppColors.surface;
-    final surfaceVariant = style.isDark ? const Color(0xFF334155) : AppColors.surfaceVariant;
+    final surfaceColor = style.isDark
+        ? const Color(0xFF182235)
+        : AppColors.surface;
+    final surfaceVariant = style.isDark
+        ? const Color(0xFF27344A)
+        : AppColors.surfaceVariant;
     final textPrimary = style.isDark ? Colors.white : AppColors.textPrimary;
-    final textSecondary = style.isDark ? const Color(0xFF94A3B8) : AppColors.textSecondary;
-    final textHint = style.isDark ? const Color(0xFF64748B) : AppColors.textHint;
-    final scaffoldBg = style.isDark ? const Color(0xFF0F172A) : AppColors.background;
+    final textSecondary = style.isDark
+        ? const Color(0xFF94A3B8)
+        : AppColors.textSecondary;
+    final textHint = style.isDark
+        ? const Color(0xFF64748B)
+        : AppColors.textHint;
+    final scaffoldBg = style.isDark
+        ? const Color(0xFF0F172A)
+        : AppColors.background;
+    final colorScheme = ColorScheme.fromSeed(
+      seedColor: style.primary,
+      brightness: style.isDark ? Brightness.dark : Brightness.light,
+      primary: style.primary,
+      onPrimary: Colors.white,
+      secondary: style.accent,
+      onSecondary: Colors.white,
+      surface: surfaceColor,
+      surfaceContainerHighest: surfaceVariant,
+      error: AppColors.error,
+    );
 
     return ThemeData(
       useMaterial3: true,
       brightness: style.isDark ? Brightness.dark : Brightness.light,
       primaryColor: style.primary,
-      colorScheme: ColorScheme.fromSeed(
-        seedColor: style.primary,
-        brightness: style.isDark ? Brightness.dark : Brightness.light,
-        primary: style.primary,
-        secondary: style.accent,
-        surface: surfaceColor,
-        error: AppColors.error,
-      ),
+      colorScheme: colorScheme,
       scaffoldBackgroundColor: scaffoldBg,
       fontFamily: GoogleFonts.inter().fontFamily,
       textTheme: TextTheme(
-        bodyLarge: TextStyle(color: textPrimary),
-        bodyMedium: TextStyle(color: textSecondary),
+        bodyLarge: GoogleFonts.inter(color: textPrimary, fontSize: 16),
+        bodyMedium: GoogleFonts.inter(color: textSecondary, fontSize: 14),
+        titleLarge: GoogleFonts.inter(
+          color: textPrimary,
+          fontSize: 22,
+          fontWeight: FontWeight.w700,
+        ),
+        titleMedium: GoogleFonts.inter(
+          color: textPrimary,
+          fontSize: 16,
+          fontWeight: FontWeight.w600,
+        ),
+        labelLarge: GoogleFonts.inter(
+          fontSize: 14,
+          fontWeight: FontWeight.w600,
+        ),
       ),
       appBarTheme: AppBarTheme(
         backgroundColor: style.appBarColor,
@@ -241,7 +268,8 @@ class AppTheme {
         elevation: 0,
         scrolledUnderElevation: 0,
         centerTitle: false,
-        systemOverlayStyle: style.isDark || style.appBarTextColor == Colors.white
+        systemOverlayStyle:
+            style.isDark || style.appBarTextColor == Colors.white
             ? SystemUiOverlayStyle.light
             : SystemUiOverlayStyle.dark,
         titleTextStyle: GoogleFonts.inter(
@@ -281,6 +309,16 @@ class AppTheme {
           ),
         ),
       ),
+      textButtonTheme: TextButtonThemeData(
+        style: TextButton.styleFrom(
+          foregroundColor: style.primary,
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+          textStyle: GoogleFonts.inter(
+            fontSize: 14,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      ),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
         fillColor: surfaceVariant,
@@ -294,24 +332,28 @@ class AppTheme {
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14),
-          borderSide: BorderSide(color: style.primary, width: 1.5),
+          borderSide: BorderSide(color: style.primary, width: 2),
         ),
         errorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14),
           borderSide: const BorderSide(color: AppColors.error),
         ),
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-        hintStyle: GoogleFonts.inter(
-          color: textHint,
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 16,
+          vertical: 14,
+        ),
+        hintStyle: GoogleFonts.inter(color: textHint, fontSize: 14),
+        labelStyle: GoogleFonts.inter(color: textSecondary, fontSize: 14),
+        floatingLabelStyle: GoogleFonts.inter(
+          color: style.primary,
           fontSize: 14,
+          fontWeight: FontWeight.w600,
         ),
       ),
       cardTheme: CardThemeData(
         color: surfaceColor,
         elevation: 0,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         margin: EdgeInsets.zero,
       ),
       bottomNavigationBarTheme: BottomNavigationBarThemeData(
@@ -321,13 +363,19 @@ class AppTheme {
         type: BottomNavigationBarType.fixed,
         elevation: 0,
       ),
+      navigationBarTheme: NavigationBarThemeData(
+        backgroundColor: surfaceColor,
+        indicatorColor: style.primary.withValues(alpha: 0.14),
+        labelTextStyle: WidgetStatePropertyAll(
+          GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w600),
+        ),
+        elevation: 0,
+      ),
       chipTheme: ChipThemeData(
         backgroundColor: surfaceVariant,
         selectedColor: style.primary.withValues(alpha: 0.15),
         labelStyle: GoogleFonts.inter(fontSize: 13, color: textPrimary),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(10),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
         side: BorderSide.none,
       ),
     );

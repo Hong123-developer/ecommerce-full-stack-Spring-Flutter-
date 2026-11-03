@@ -15,16 +15,6 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
-/**
- * One in-app notification for one user (the bell in the admin header and the storefront
- * navbar). Admin events get one row per administrator, so each keeps their own read state.
- * <p>
- * The order fields are a snapshot of the moment it happened - the order itself may have
- * moved on since. They let the client word the notification in the shopper's language;
- * {@link #title} and {@link #message} are the English fallback.
- * {@code order_id} is a plain column, not a foreign key: orders are never deleted, and a
- * notification must never hold up (or lock) the order it is about.
- */
 @Entity
 @Table(
         name = "notifications",

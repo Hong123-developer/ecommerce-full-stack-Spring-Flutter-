@@ -28,7 +28,9 @@ public class CouponController {
 
     private static java.math.BigDecimal cartSubtotal(com.ecomerceshopeonline.ecomercewepapp.entity.Cart cart) {
         return cart.getItems().stream().map(item -> {
-            var price = item.getVariant() == null ? item.getProduct().getPrice() : item.getVariant().getPrice();
+            var price = item.getVariant() == null
+                    ? item.getProduct().discountedPrice(item.getProduct().getPrice())
+                    : item.getProduct().discountedPrice(item.getVariant().getPrice());
             return price.multiply(java.math.BigDecimal.valueOf(item.getQuantity()));
         }).reduce(java.math.BigDecimal.ZERO, java.math.BigDecimal::add);
     }

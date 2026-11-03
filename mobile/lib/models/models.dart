@@ -104,6 +104,8 @@ class ProductVariant {
   final String label;
   final String? sku;
   final double price;
+  final double originalPrice;
+  final int discountPercent;
   final int stockQuantity;
   final bool inStock;
   final String? imageUrl;
@@ -115,6 +117,8 @@ class ProductVariant {
     required this.label,
     this.sku,
     required this.price,
+    required this.originalPrice,
+    required this.discountPercent,
     required this.stockQuantity,
     required this.inStock,
     this.imageUrl,
@@ -124,10 +128,13 @@ class ProductVariant {
   factory ProductVariant.fromJson(Map<String, dynamic> json) {
     return ProductVariant(
       id: json['id'] ?? 0,
-      options: (json['options'] as List?)?.map((e) => e.toString()).toList() ?? [],
+      options:
+          (json['options'] as List?)?.map((e) => e.toString()).toList() ?? [],
       label: json['label'] ?? '',
       sku: json['sku'],
       price: (json['price'] ?? 0).toDouble(),
+      originalPrice: (json['originalPrice'] ?? json['price'] ?? 0).toDouble(),
+      discountPercent: json['discountPercent'] ?? 0,
       stockQuantity: json['stockQuantity'] ?? 0,
       inStock: json['inStock'] ?? false,
       imageUrl: json['imageUrl'],
@@ -144,6 +151,8 @@ class Product {
   final String? description;
   final String? sku;
   final double price;
+  final double originalPrice;
+  final int discountPercent;
   final int stockQuantity;
   final bool inStock;
   final String? imageUrl;
@@ -167,6 +176,8 @@ class Product {
     this.description,
     this.sku,
     required this.price,
+    required this.originalPrice,
+    required this.discountPercent,
     required this.stockQuantity,
     required this.inStock,
     this.imageUrl,
@@ -192,6 +203,8 @@ class Product {
       description: description,
       sku: sku,
       price: price,
+      originalPrice: originalPrice,
+      discountPercent: discountPercent,
       stockQuantity: stockQuantity,
       inStock: inStock,
       imageUrl: imageUrl,
@@ -218,12 +231,22 @@ class Product {
       description: json['description'],
       sku: json['sku'],
       price: (json['price'] ?? 0).toDouble(),
+      originalPrice: (json['originalPrice'] ?? json['price'] ?? 0).toDouble(),
+      discountPercent: json['discountPercent'] ?? 0,
       stockQuantity: json['stockQuantity'] ?? 0,
       inStock: json['inStock'] ?? false,
       imageUrl: json['imageUrl'],
-      galleryUrls: (json['galleryUrls'] as List?)?.map((e) => e.toString()).toList() ?? [],
-      optionNames: (json['optionNames'] as List?)?.map((e) => e.toString()).toList() ?? [],
-      variants: (json['variants'] as List?)?.map((e) => ProductVariant.fromJson(e)).toList() ?? [],
+      galleryUrls:
+          (json['galleryUrls'] as List?)?.map((e) => e.toString()).toList() ??
+          [],
+      optionNames:
+          (json['optionNames'] as List?)?.map((e) => e.toString()).toList() ??
+          [],
+      variants:
+          (json['variants'] as List?)
+              ?.map((e) => ProductVariant.fromJson(e))
+              .toList() ??
+          [],
       enabled: json['enabled'] ?? true,
       rating: (json['rating'] ?? 0).toDouble(),
       reviewCount: json['reviewCount'] ?? 0,
@@ -303,7 +326,9 @@ class Cart {
   factory Cart.fromJson(Map<String, dynamic> json) {
     return Cart(
       id: json['id'] ?? 0,
-      items: (json['items'] as List?)?.map((e) => CartItem.fromJson(e)).toList() ?? [],
+      items:
+          (json['items'] as List?)?.map((e) => CartItem.fromJson(e)).toList() ??
+          [],
       itemCount: json['itemCount'] ?? 0,
       totalQuantity: json['totalQuantity'] ?? 0,
       subtotal: (json['subtotal'] ?? 0).toDouble(),
@@ -311,7 +336,14 @@ class Cart {
     );
   }
 
-  static Cart empty() => Cart(id: 0, items: [], itemCount: 0, totalQuantity: 0, subtotal: 0, checkoutReady: false);
+  static Cart empty() => Cart(
+    id: 0,
+    items: [],
+    itemCount: 0,
+    totalQuantity: 0,
+    subtotal: 0,
+    checkoutReady: false,
+  );
 }
 
 class OrderItem {
@@ -424,7 +456,11 @@ class Order {
       contactName: json['contactName'],
       contactPhone: json['contactPhone'],
       note: json['note'],
-      items: (json['items'] as List?)?.map((e) => OrderItem.fromJson(e)).toList() ?? [],
+      items:
+          (json['items'] as List?)
+              ?.map((e) => OrderItem.fromJson(e))
+              .toList() ??
+          [],
       paymentMethod: json['paymentMethod'] ?? '',
       paymentStatus: json['paymentStatus'] ?? '',
       paymentId: json['paymentId'],
@@ -433,132 +469,137 @@ class Order {
       updatedAt: json['updatedAt'],
     );
   }
-
 }
 
 class OrderTrackingEvent {
-    final String status;
-    final String? note;
-    final String? createdAt;
+  final String status;
+  final String? note;
+  final String? createdAt;
 
-    OrderTrackingEvent({required this.status, this.note, this.createdAt});
+  OrderTrackingEvent({required this.status, this.note, this.createdAt});
 
-    factory OrderTrackingEvent.fromJson(Map<String, dynamic> json) {
-      return OrderTrackingEvent(
-        status: json['status'] ?? '',
-        note: json['note'],
-        createdAt: json['createdAt'],
-      );
-    }
+  factory OrderTrackingEvent.fromJson(Map<String, dynamic> json) {
+    return OrderTrackingEvent(
+      status: json['status'] ?? '',
+      note: json['note'],
+      createdAt: json['createdAt'],
+    );
   }
+}
 
 class OrderTracking {
-    final int orderId;
-    final String orderNumber;
-    final String currentStatus;
-    final List<OrderTrackingEvent> events;
+  final int orderId;
+  final String orderNumber;
+  final String currentStatus;
+  final List<OrderTrackingEvent> events;
 
-    OrderTracking({
-      required this.orderId,
-      required this.orderNumber,
-      required this.currentStatus,
-      required this.events,
-    });
+  OrderTracking({
+    required this.orderId,
+    required this.orderNumber,
+    required this.currentStatus,
+    required this.events,
+  });
 
-    factory OrderTracking.fromJson(Map<String, dynamic> json) {
-      return OrderTracking(
-        orderId: json['orderId'] ?? 0,
-        orderNumber: json['orderNumber'] ?? '',
-        currentStatus: json['currentStatus'] ?? '',
-        events: (json['events'] as List?)
-                ?.map((e) => OrderTrackingEvent.fromJson(e))
-                .toList() ??
-            [],
-      );
-    }
+  factory OrderTracking.fromJson(Map<String, dynamic> json) {
+    return OrderTracking(
+      orderId: json['orderId'] ?? 0,
+      orderNumber: json['orderNumber'] ?? '',
+      currentStatus: json['currentStatus'] ?? '',
+      events:
+          (json['events'] as List?)
+              ?.map((e) => OrderTrackingEvent.fromJson(e))
+              .toList() ??
+          [],
+    );
   }
+}
 
 class InvoiceLine {
-    final String productName;
-    final String? variantLabel;
-    final String? sku;
-    final int quantity;
-    final double unitPrice;
-    final double subtotal;
+  final String productName;
+  final String? variantLabel;
+  final String? sku;
+  final int quantity;
+  final double unitPrice;
+  final double subtotal;
 
-    InvoiceLine({
-      required this.productName,
-      this.variantLabel,
-      this.sku,
-      required this.quantity,
-      required this.unitPrice,
-      required this.subtotal,
-    });
+  InvoiceLine({
+    required this.productName,
+    this.variantLabel,
+    this.sku,
+    required this.quantity,
+    required this.unitPrice,
+    required this.subtotal,
+  });
 
-    factory InvoiceLine.fromJson(Map<String, dynamic> json) {
-      return InvoiceLine(
-        productName: json['productName'] ?? '',
-        variantLabel: json['variantLabel'],
-        sku: json['sku'],
-        quantity: json['quantity'] ?? 0,
-        unitPrice: (json['unitPrice'] ?? 0).toDouble(),
-        subtotal: (json['subtotal'] ?? 0).toDouble(),
-      );
-    }
+  factory InvoiceLine.fromJson(Map<String, dynamic> json) {
+    return InvoiceLine(
+      productName: json['productName'] ?? '',
+      variantLabel: json['variantLabel'],
+      sku: json['sku'],
+      quantity: json['quantity'] ?? 0,
+      unitPrice: (json['unitPrice'] ?? 0).toDouble(),
+      subtotal: (json['subtotal'] ?? 0).toDouble(),
+    );
   }
+}
 
 class Invoice {
-    final String invoiceNumber;
-    final String orderNumber;
-    final String? issuedAt;
-    final String? shippingAddress;
-    final String? contactName;
-    final String? contactPhone;
-    final double subtotal;
-    final double deliveryFee;
-    final double discount;
-    final double totalAmount;
-    final String? couponCode;
-    final String? paymentMethod;
-    final String? paymentStatus;
-    final List<InvoiceLine> items;
+  final String invoiceNumber;
+  final String orderNumber;
+  final String? issuedAt;
+  final String? shippingAddress;
+  final String? contactName;
+  final String? contactPhone;
+  final double subtotal;
+  final double deliveryFee;
+  final double discount;
+  final double totalAmount;
+  final String? couponCode;
+  final String? paymentMethod;
+  final String? paymentStatus;
+  final List<InvoiceLine> items;
 
-    Invoice({
-      required this.invoiceNumber,
-      required this.orderNumber,
-      this.issuedAt,
-      this.shippingAddress,
-      this.contactName,
-      this.contactPhone,
-      required this.subtotal,
-      required this.deliveryFee,
-      required this.discount,
-      required this.totalAmount,
-      this.couponCode,
-      this.paymentMethod,
-      this.paymentStatus,
-      required this.items,
-    });
+  Invoice({
+    required this.invoiceNumber,
+    required this.orderNumber,
+    this.issuedAt,
+    this.shippingAddress,
+    this.contactName,
+    this.contactPhone,
+    required this.subtotal,
+    required this.deliveryFee,
+    required this.discount,
+    required this.totalAmount,
+    this.couponCode,
+    this.paymentMethod,
+    this.paymentStatus,
+    required this.items,
+  });
 
-    factory Invoice.fromJson(Map<String, dynamic> json) {
-      return Invoice(
-        invoiceNumber: json['invoiceNumber'] ?? '',
-        orderNumber: json['orderNumber'] ?? '',
-        issuedAt: json['issuedAt'],
-        shippingAddress: json['shippingAddress'],
-        contactName: json['contactName'],
-        contactPhone: json['contactPhone'],
-        subtotal: (json['subtotal'] ?? 0).toDouble(),
-        deliveryFee: (json['deliveryFee'] ?? 0).toDouble(),
-        discount: (json['discount'] ?? 0).toDouble(),
-        totalAmount: (json['totalAmount'] ?? 0).toDouble(),
-        couponCode: json['couponCode'],
-        paymentMethod: json['paymentMethod'],
-        paymentStatus: json['paymentStatus'],
-        items: (json['items'] as List?)?.map((e) => InvoiceLine.fromJson(e)).toList() ?? [],
-      );
-    }
+  factory Invoice.fromJson(Map<String, dynamic> json) {
+    return Invoice(
+      invoiceNumber: json['invoiceNumber'] ?? '',
+      orderNumber: json['orderNumber'] ?? '',
+      issuedAt: json['issuedAt'],
+      shippingAddress: json['shippingAddress'],
+      contactName: json['contactName'],
+      contactPhone: json['contactPhone'],
+      subtotal: (json['subtotal'] ?? 0).toDouble(),
+      deliveryFee: (json['deliveryFee'] ?? 0).toDouble(),
+      discount: (json['discount'] ?? 0).toDouble(),
+      totalAmount: (json['totalAmount'] ?? 0).toDouble(),
+      couponCode: json['couponCode'],
+      paymentMethod: json['paymentMethod'],
+      paymentStatus: json['paymentStatus'],
+      items:
+          (json['items'] as List?)
+              ?.map((e) => InvoiceLine.fromJson(e))
+              .toList() ??
+          [],
+    );
   }
+}
+
 class Address {
   final int id;
   final String recipientName;
@@ -744,8 +785,10 @@ class ReviewSummary {
     return ReviewSummary(
       average: (json['average'] ?? 0).toDouble(),
       count: (json['count'] ?? 0).toInt(),
-      distribution: (json['distribution'] as Map<String, dynamic>?)
-              ?.map((k, v) => MapEntry(k, (v as num).toInt())) ??
+      distribution:
+          (json['distribution'] as Map<String, dynamic>?)?.map(
+            (k, v) => MapEntry(k, (v as num).toInt()),
+          ) ??
           {},
     );
   }
@@ -815,9 +858,12 @@ class PageData<T> {
   });
 
   factory PageData.fromJson(
-      Map<String, dynamic> json, T Function(Map<String, dynamic>) fromJson) {
+    Map<String, dynamic> json,
+    T Function(Map<String, dynamic>) fromJson,
+  ) {
     return PageData(
-      content: (json['content'] as List?)?.map((e) => fromJson(e)).toList() ?? [],
+      content:
+          (json['content'] as List?)?.map((e) => fromJson(e)).toList() ?? [],
       page: json['page'] ?? 0,
       size: json['size'] ?? 0,
       totalElements: (json['totalElements'] ?? 0).toInt(),

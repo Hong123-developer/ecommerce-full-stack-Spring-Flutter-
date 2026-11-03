@@ -76,7 +76,8 @@ class WishlistButton extends ConsumerWidget {
           ),
           child: AnimatedSwitcher(
             duration: const Duration(milliseconds: 200),
-            transitionBuilder: (child, anim) => ScaleTransition(scale: anim, child: child),
+            transitionBuilder: (child, anim) =>
+                ScaleTransition(scale: anim, child: child),
             child: Icon(
               isLiked ? Icons.favorite_rounded : Icons.favorite_border_rounded,
               key: ValueKey<bool>(isLiked),
@@ -100,6 +101,8 @@ class ProductCard extends StatelessWidget {
   final String? imageUrl;
   final String name;
   final double price;
+  final double? originalPrice;
+  final int discountPercent;
   final double rating;
   final int reviewCount;
   final bool inStock;
@@ -113,6 +116,8 @@ class ProductCard extends StatelessWidget {
     this.imageUrl,
     required this.name,
     required this.price,
+    this.originalPrice,
+    this.discountPercent = 0,
     this.rating = 0,
     this.reviewCount = 0,
     this.inStock = true,
@@ -146,7 +151,9 @@ class ProductCard extends StatelessWidget {
               child: Stack(
                 children: [
                   ClipRRect(
-                    borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+                    borderRadius: const BorderRadius.vertical(
+                      top: Radius.circular(16),
+                    ),
                     child: Container(
                       color: Colors.white,
                       width: double.infinity,
@@ -177,11 +184,16 @@ class ProductCard extends StatelessWidget {
                       child: Container(
                         decoration: BoxDecoration(
                           color: Colors.black.withValues(alpha: 0.5),
-                          borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+                          borderRadius: const BorderRadius.vertical(
+                            top: Radius.circular(16),
+                          ),
                         ),
                         alignment: Alignment.center,
                         child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 6,
+                          ),
                           decoration: BoxDecoration(
                             color: AppColors.error,
                             borderRadius: BorderRadius.circular(8),
@@ -228,9 +240,13 @@ class ProductCard extends StatelessWidget {
                             children: [
                               ...List.generate(5, (i) {
                                 return Icon(
-                                  i < rating.round() ? Icons.star_rounded : Icons.star_outline_rounded,
+                                  i < rating.round()
+                                      ? Icons.star_rounded
+                                      : Icons.star_outline_rounded,
                                   size: 13,
-                                  color: i < rating.round() ? AppColors.starFilled : AppColors.starEmpty,
+                                  color: i < rating.round()
+                                      ? AppColors.starFilled
+                                      : AppColors.starEmpty,
                                 );
                               }),
                               const SizedBox(width: 4),
@@ -244,13 +260,39 @@ class ProductCard extends StatelessWidget {
                             ],
                           ),
                         const SizedBox(height: 4),
-                        Text(
-                          '\$${price.toStringAsFixed(2)}',
-                          style: const TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w700,
-                            color: AppColors.primary,
-                          ),
+                        Row(
+                          children: [
+                            Text(
+                              '\$${price.toStringAsFixed(2)}',
+                              style: const TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w700,
+                                color: AppColors.primary,
+                              ),
+                            ),
+                            if (discountPercent > 0 &&
+                                originalPrice != null &&
+                                originalPrice! > price) ...[
+                              const SizedBox(width: 6),
+                              Text(
+                                '\$${originalPrice!.toStringAsFixed(2)}',
+                                style: const TextStyle(
+                                  fontSize: 11,
+                                  color: AppColors.textSecondary,
+                                  decoration: TextDecoration.lineThrough,
+                                ),
+                              ),
+                              const SizedBox(width: 4),
+                              Text(
+                                '-$discountPercent%',
+                                style: const TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w700,
+                                  color: AppColors.accent,
+                                ),
+                              ),
+                            ],
+                          ],
                         ),
                       ],
                     ),
@@ -516,10 +558,7 @@ class EmptyState extends StatelessWidget {
             ],
             if (actionLabel != null) ...[
               const SizedBox(height: 24),
-              ElevatedButton(
-                onPressed: onAction,
-                child: Text(actionLabel!),
-              ),
+              ElevatedButton(onPressed: onAction, child: Text(actionLabel!)),
             ],
           ],
         ),
@@ -569,12 +608,17 @@ class GradientButton extends StatelessWidget {
         ),
         child: MaterialButton(
           onPressed: isLoading ? null : onPressed,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(14),
+          ),
           child: isLoading
               ? const SizedBox(
                   width: 22,
                   height: 22,
-                  child: CircularProgressIndicator(strokeWidth: 2.5, color: Colors.white),
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2.5,
+                    color: Colors.white,
+                  ),
                 )
               : Text(
                   label,

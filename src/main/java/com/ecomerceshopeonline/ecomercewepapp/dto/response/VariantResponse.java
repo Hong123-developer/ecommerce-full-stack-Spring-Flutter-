@@ -11,6 +11,8 @@ public record VariantResponse(
         String label,
         String sku,
         BigDecimal price,
+        BigDecimal originalPrice,
+        int discountPercent,
         Integer stockQuantity,
         /** Stock left, the variant is enabled and so is its product. */
         boolean inStock,

@@ -8,14 +8,6 @@ import lombok.Setter;
 import lombok.experimental.SuperBuilder;
 import org.hibernate.annotations.ColumnDefault;
 
-/**
- * A shopper's star rating (and optional words) for a product they received. One per
- * customer and product; only an order line of a DELIVERED order makes a customer eligible.
- * <p>
- * {@link Product#getRatingAverage()} / {@link Product#getRatingCount()} are derived from the
- * <em>visible</em> rows and are recomputed in the same transaction whenever one changes.
- * {@code updated_at} is the author's last edit: hiding / showing by an admin does not touch it.
- */
 @Entity
 @Table(
         name = "product_reviews",

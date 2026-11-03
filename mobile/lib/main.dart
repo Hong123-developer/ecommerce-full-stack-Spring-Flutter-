@@ -14,21 +14,7 @@ void main() {
   // backend's sign-in redirects can reach the router. No-op on other platforms.
   usePathUrlStrategy();
 
-  // Set immersive status bar styling
-  SystemChrome.setSystemUIOverlayStyle(
-    const SystemUiOverlayStyle(
-      statusBarColor: Colors.transparent,
-      statusBarIconBrightness: Brightness.dark,
-      systemNavigationBarColor: Colors.white,
-      systemNavigationBarIconBrightness: Brightness.dark,
-    ),
-  );
-
-  runApp(
-    const ProviderScope(
-      child: ECommerceApp(),
-    ),
-  );
+  runApp(const ProviderScope(child: ECommerceApp()));
 }
 
 class ECommerceApp extends ConsumerWidget {
@@ -38,12 +24,25 @@ class ECommerceApp extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final router = ref.watch(routerProvider);
     final themeStyle = ref.watch(themeStyleProvider);
+    final isDark = themeStyle.isDark;
 
-    return MaterialApp.router(
-      title: 'ShopOnline E-Commerce',
-      debugShowCheckedModeBanner: false,
-      theme: AppTheme.getTheme(themeStyle),
-      routerConfig: router,
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: SystemUiOverlayStyle(
+        statusBarColor: Colors.transparent,
+        statusBarIconBrightness: isDark ? Brightness.light : Brightness.dark,
+        systemNavigationBarColor: isDark
+            ? const Color(0xFF0F172A)
+            : AppColors.surface,
+        systemNavigationBarIconBrightness: isDark
+            ? Brightness.light
+            : Brightness.dark,
+      ),
+      child: MaterialApp.router(
+        title: 'ShopOnline E-Commerce',
+        debugShowCheckedModeBanner: false,
+        theme: AppTheme.getTheme(themeStyle),
+        routerConfig: router,
+      ),
     );
   }
 }

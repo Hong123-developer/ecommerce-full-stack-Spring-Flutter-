@@ -8,7 +8,8 @@ class ThemeStyleNotifier extends Notifier<AppThemeStyle> {
 
   @override
   AppThemeStyle build() {
-    _loadSavedTheme();
+    // Avoid notifying listeners while Riverpod is still mounting the provider.
+    Future<void>.microtask(_loadSavedTheme);
     return AppThemeStyle.purple;
   }
 
@@ -21,7 +22,9 @@ class ThemeStyleNotifier extends Notifier<AppThemeStyle> {
           (s) => s.id == savedId,
           orElse: () => AppThemeStyle.purple,
         );
-        state = found;
+        if (ref.mounted) {
+          state = found;
+        }
       }
     } catch (_) {}
   }

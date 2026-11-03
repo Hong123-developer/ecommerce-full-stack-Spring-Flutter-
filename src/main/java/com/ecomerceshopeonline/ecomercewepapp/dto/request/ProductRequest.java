@@ -26,6 +26,10 @@ public record ProductRequest(
         @Digits(integer = 10, fraction = 2, message = "Price must have at most 2 decimal places")
         BigDecimal price,
 
+        @Min(value = 0, message = "Discount cannot be negative")
+        @Max(value = 100, message = "Discount cannot exceed 100 percent")
+        Integer discountPercent,
+
         @NotNull(message = "Stock quantity is required")
         @Min(value = 0, message = "Stock quantity cannot be negative")
         Integer stockQuantity,

@@ -124,6 +124,8 @@ class WishlistScreen extends ConsumerWidget {
                   imageUrl: product.imageUrl,
                   name: product.name,
                   price: product.price,
+                  originalPrice: product.originalPrice,
+                  discountPercent: product.discountPercent,
                   rating: product.rating,
                   reviewCount: product.reviewCount,
                   inStock: product.inStock,

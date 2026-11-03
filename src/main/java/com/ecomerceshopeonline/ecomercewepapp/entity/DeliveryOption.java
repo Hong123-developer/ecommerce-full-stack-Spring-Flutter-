@@ -11,15 +11,7 @@ import org.hibernate.annotations.ColumnDefault;
 
 import java.math.BigDecimal;
 
-/**
- * One way a shopper can receive an order: a delivery company (J&T, VET, the store's own
- * rider...) with its fee, or picking it up at the store. Shoppers see the enabled ones,
- * ordered by {@code sortOrder} then {@code id}; the admin manages all of them.
- * <p>
- * Orders keep a reference to the option they used plus a snapshot of its name, type and
- * fee, so renaming or re-pricing an option never rewrites past orders - and an option
- * that orders refer to can only be disabled, not deleted.
- */
+
 @Entity
 @Table(name = "delivery_options")
 @Getter

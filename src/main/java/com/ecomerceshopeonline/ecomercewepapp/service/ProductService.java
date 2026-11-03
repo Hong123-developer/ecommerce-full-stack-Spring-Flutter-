@@ -2,6 +2,7 @@ package com.ecomerceshopeonline.ecomercewepapp.service;
 
 import com.ecomerceshopeonline.ecomercewepapp.dto.request.MoveDirection;
 import com.ecomerceshopeonline.ecomercewepapp.dto.request.ProductRequest;
+import com.ecomerceshopeonline.ecomercewepapp.dto.request.DiscountRequest;
 import com.ecomerceshopeonline.ecomercewepapp.dto.response.PageResponse;
 import com.ecomerceshopeonline.ecomercewepapp.dto.response.ProductResponse;
 import org.springframework.data.domain.Pageable;
@@ -19,7 +20,7 @@ public interface ProductService {
 
     // --- admin ---
 
-    PageResponse<ProductResponse> listAll(Pageable pageable);
+    PageResponse<ProductResponse> listAll(String search, Pageable pageable);
 
     ProductResponse getById(Long id);
 
@@ -28,6 +29,8 @@ public interface ProductService {
     ProductResponse update(Long id, ProductRequest request);
 
     ProductResponse setEnabled(Long id, boolean enabled);
+
+    ProductResponse setDiscount(Long id, DiscountRequest request);
 
     /** Swaps the product with its neighbour in the display order; 400 when it is already first / last. */
     ProductResponse move(Long id, MoveDirection direction);

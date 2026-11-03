@@ -40,7 +40,9 @@ public class ProductMapper {
                 List.copyOf(variant.getOptions()),
                 variant.getLabel(),
                 variant.getSku(),
+                product.discountedPrice(variant.getPrice()),
                 variant.getPrice(),
+                product.getDiscountPercent(),
                 variant.getStockQuantity(),
                 purchasable && variant.isInStock(1),
                 variant.getImageUrl(),
@@ -57,7 +59,12 @@ public class ProductMapper {
                 product.getName(),
                 product.getDescription(),
                 product.getSku(),
+                product.discountedPrice(product.getPrice()),
                 product.getPrice(),
+                product.getDiscountPercent(),
+                product.getDiscountStartDate(),
+                product.getDiscountEndDate(),
+                product.isDiscountActive(),
                 product.getStockQuantity(),
                 product.isInStock(1),
                 product.getImageUrl(),
@@ -88,6 +95,7 @@ public class ProductMapper {
                 .description(request.description())
                 .sku(request.sku().trim())
                 .price(request.price())
+                .discountPercent(request.discountPercent() == null ? 0 : request.discountPercent())
                 .stockQuantity(request.stockQuantity())
                 .imageUrl(request.imageUrl())
                 .galleryUrls(cleanGallery(request.galleryUrls()))
@@ -103,6 +111,9 @@ public class ProductMapper {
         target.setDescription(request.description());
         target.setSku(request.sku().trim());
         target.setPrice(request.price());
+        if (request.discountPercent() != null) {
+            target.setDiscountPercent(request.discountPercent());
+        }
         target.setStockQuantity(request.stockQuantity());
         target.setImageUrl(request.imageUrl());
         // Older clients don't send the gallery at all - leave it alone rather than wipe it.
@@ -155,4 +166,3 @@ public class ProductMapper {
                 .toList());
     }
 }
-

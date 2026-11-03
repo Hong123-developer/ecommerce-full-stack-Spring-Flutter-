@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:dio/dio.dart';
 
 import '../../config/api_config.dart';
 import '../../config/theme.dart';
@@ -636,67 +637,124 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   }
 
   void _showChangePasswordDialog(BuildContext context) {
+    final pageContext = context;
     final oldPassCtrl = TextEditingController();
     final newPassCtrl = TextEditingController();
+    final formKey = GlobalKey<FormState>();
+    var isSubmitting = false;
 
     showDialog(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Change Password'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              controller: oldPassCtrl,
-              obscureText: true,
-              decoration: const InputDecoration(labelText: 'Current Password'),
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setDialogState) => AlertDialog(
+          title: const Text('Change Password'),
+          content: Form(
+            key: formKey,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextFormField(
+                  controller: oldPassCtrl,
+                  obscureText: true,
+                  enabled: !isSubmitting,
+                  textInputAction: TextInputAction.next,
+                  decoration: const InputDecoration(
+                    labelText: 'Current Password',
+                    prefixIcon: Icon(Icons.lock_outline_rounded),
+                  ),
+                  validator: (value) => value == null || value.isEmpty
+                      ? 'Enter your current password'
+                      : null,
+                ),
+                const SizedBox(height: 12),
+                TextFormField(
+                  controller: newPassCtrl,
+                  obscureText: true,
+                  enabled: !isSubmitting,
+                  textInputAction: TextInputAction.done,
+                  decoration: const InputDecoration(
+                    labelText: 'New Password',
+                    helperText: '8+ characters with a letter and a number',
+                    prefixIcon: Icon(Icons.password_outlined),
+                  ),
+                  validator: (value) {
+                    final password = value ?? '';
+                    if (password.length < 8) {
+                      return 'Use at least 8 characters';
+                    }
+                    if (password.length > 72) {
+                      return 'Use at most 72 characters';
+                    }
+                    if (!RegExp(r'[A-Za-z]').hasMatch(password)) {
+                      return 'Include at least one letter';
+                    }
+                    if (!RegExp(r'\d').hasMatch(password)) {
+                      return 'Include at least one number';
+                    }
+                    if (password == oldPassCtrl.text) {
+                      return 'New password must be different';
+                    }
+                    return null;
+                  },
+                ),
+              ],
             ),
-            const SizedBox(height: 12),
-            TextField(
-              controller: newPassCtrl,
-              obscureText: true,
-              decoration: const InputDecoration(
-                labelText: 'New Password (min 6 chars)',
-              ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: isSubmitting ? null : () => Navigator.pop(ctx),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: isSubmitting
+                  ? null
+                  : () async {
+                      if (!(formKey.currentState?.validate() ?? false)) {
+                        return;
+                      }
+                      setDialogState(() => isSubmitting = true);
+                      try {
+                        await ref
+                            .read(dioProvider)
+                            .post(
+                              ApiConfig.changePassword,
+                              data: {
+                                'currentPassword': oldPassCtrl.text,
+                                'newPassword': newPassCtrl.text,
+                              },
+                            );
+                        if (!ctx.mounted) return;
+                        Navigator.pop(ctx);
+                        await ref.read(authProvider.notifier).logout();
+                        if (!pageContext.mounted) return;
+                        pageContext.go('/login');
+                      } on DioException catch (error) {
+                        if (!ctx.mounted) return;
+                        setDialogState(() => isSubmitting = false);
+                        ScaffoldMessenger.of(ctx).showSnackBar(
+                          SnackBar(
+                            content: Text(
+                              'Unable to update password: '
+                              '${ApiException.fromDioError(error).message}',
+                            ),
+                            backgroundColor: AppColors.error,
+                          ),
+                        );
+                      } finally {
+                        oldPassCtrl.clear();
+                        newPassCtrl.clear();
+                      }
+                    },
+              child: isSubmitting
+                  ? const SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Text('Update'),
             ),
           ],
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            onPressed: () async {
-              if (oldPassCtrl.text.isEmpty || newPassCtrl.text.isEmpty) return;
-              final dio = ref.read(dioProvider);
-              try {
-                await dio.post(
-                  ApiConfig.changePassword,
-                  data: {
-                    'currentPassword': oldPassCtrl.text,
-                    'newPassword': newPassCtrl.text,
-                  },
-                );
-                if (ctx.mounted) {
-                  Navigator.pop(ctx);
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Password updated successfully!'),
-                    ),
-                  );
-                }
-              } catch (e) {
-                if (ctx.mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('Error updating password: $e')),
-                  );
-                }
-              }
-            },
-            child: const Text('Update'),
-          ),
-        ],
       ),
     );
   }

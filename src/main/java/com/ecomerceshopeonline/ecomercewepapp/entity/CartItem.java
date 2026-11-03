@@ -12,11 +12,6 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Entity
-/*
- * (cart, product, variant) is unique. Because NULLs are distinct in a unique constraint, plain
- * product lines (variant_id NULL) are additionally covered by the partial unique index
- * uk_cart_items_cart_product_plain, created by LegacySchemaCleanup on PostgreSQL.
- */
 @Table(
         name = "cart_items",
         uniqueConstraints = @UniqueConstraint(
@@ -69,9 +64,9 @@ public class CartItem {
     /** The variant's price when one is chosen, otherwise the product's. */
     public BigDecimal getUnitPrice() {
         if (variant != null) {
-            return variant.getPrice();
+            return variant.getProduct().discountedPrice(variant.getPrice());
         }
-        return product == null ? null : product.getPrice();
+        return product == null ? null : product.discountedPrice(product.getPrice());
     }
 
     /** Live price x quantity. The cart is not a snapshot - it follows the current catalogue price. */

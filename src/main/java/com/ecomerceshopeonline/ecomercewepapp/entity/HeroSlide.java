@@ -8,10 +8,6 @@ import lombok.Setter;
 import lombok.experimental.SuperBuilder;
 import org.hibernate.annotations.ColumnDefault;
 
-/**
- * One slide of the storefront home-page hero carousel. Shoppers see the enabled ones,
- * ordered by {@code sortOrder} then {@code id}; the admin manages all of them.
- */
 @Entity
 @Table(name = "hero_slides")
 @Getter

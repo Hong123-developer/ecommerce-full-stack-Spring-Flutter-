@@ -83,7 +83,7 @@ public class ProductLikeServiceImpl implements ProductLikeService {
         return new ProductLikeResponse(
                 product.getId(),
                 product.getName(),
-                product.getPrice(),
+                product.discountedPrice(product.getPrice()),
                 product.getImageUrl(),
                 product.isInStock(1),
                 liked,

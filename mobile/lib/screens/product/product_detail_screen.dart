@@ -99,6 +99,9 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
     }
 
     final currentPrice = _selectedVariant?.price ?? product.price;
+    final originalPrice =
+        _selectedVariant?.originalPrice ?? product.originalPrice;
+    final discountPercent = product.discountPercent;
     final inStock = _selectedVariant != null
         ? _selectedVariant!.inStock
         : product.inStock;
@@ -115,9 +118,9 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
 
           // ─── Main Details Card ───
           Container(
-            padding: const EdgeInsets.all(20),
-            decoration: const BoxDecoration(
-              color: AppColors.surface,
+            padding: const EdgeInsets.fromLTRB(20, 24, 20, 28),
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.surface,
               borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
             ),
             child: Column(
@@ -256,16 +259,43 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                   crossAxisAlignment: CrossAxisAlignment.baseline,
                   textBaseline: TextBaseline.alphabetic,
                   children: [
-                    Text(
-                      '\$${currentPrice.toStringAsFixed(2)}',
-                      style: const TextStyle(
-                        fontSize: 28,
-                        fontWeight: FontWeight.w800,
-                        color: AppColors.primary,
-                      ),
+                    Row(
+                      children: [
+                        Text(
+                          '\$${currentPrice.toStringAsFixed(2)}',
+                          style: const TextStyle(
+                            fontSize: 28,
+                            fontWeight: FontWeight.w800,
+                            color: AppColors.primary,
+                          ),
+                        ),
+                        if (discountPercent > 0 &&
+                            originalPrice > currentPrice) ...[
+                          const SizedBox(width: 10),
+                          Text(
+                            '\$${originalPrice.toStringAsFixed(2)}',
+                            style: const TextStyle(
+                              fontSize: 14,
+                              color: AppColors.textSecondary,
+                              decoration: TextDecoration.lineThrough,
+                            ),
+                          ),
+                          const SizedBox(width: 6),
+                          Text(
+                            '-$discountPercent%',
+                            style: const TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w700,
+                              color: AppColors.accent,
+                            ),
+                          ),
+                        ],
+                      ],
                     ),
                   ],
                 ),
+                const SizedBox(height: 18),
+                _buildProductBenefits(),
                 const Divider(height: 32, color: AppColors.divider),
 
                 // ─── Variants Selection ───
@@ -405,71 +435,173 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
   }
 
   Widget _buildImageGallery(List<String> images) {
+    final scheme = Theme.of(context).colorScheme;
     return SizedBox(
-      height: 300,
+      height: 370,
       child: Stack(
         children: [
-          PageView.builder(
-            itemCount: images.length,
-            onPageChanged: (i) => setState(() => _selectedImageIndex = i),
-            itemBuilder: (context, index) {
-              final url = images[index];
-              return Container(
-                color: Colors.white,
-                child: url.isNotEmpty
-                    ? CachedNetworkImage(
-                        imageUrl: url,
-                        fit: BoxFit.contain,
-                        placeholder: (_, __) => const Center(
-                          child: CircularProgressIndicator(
-                            color: AppColors.primary,
+          Container(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [scheme.surfaceContainerHighest, scheme.surface],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+            ),
+            child: PageView.builder(
+              itemCount: images.length,
+              onPageChanged: (i) => setState(() => _selectedImageIndex = i),
+              itemBuilder: (context, index) {
+                final url = images[index];
+                return Padding(
+                  padding: const EdgeInsets.fromLTRB(24, 18, 24, 72),
+                  child: url.isNotEmpty
+                      ? CachedNetworkImage(
+                          imageUrl: url,
+                          fit: BoxFit.contain,
+                          placeholder: (_, __) => const Center(
+                            child: CircularProgressIndicator(
+                              color: AppColors.primary,
+                            ),
                           ),
-                        ),
-                        errorWidget: (_, __, ___) => const Center(
+                          errorWidget: (_, __, ___) => const Center(
+                            child: Icon(
+                              Icons.image_not_supported_rounded,
+                              size: 60,
+                              color: AppColors.textHint,
+                            ),
+                          ),
+                        )
+                      : const Center(
                           child: Icon(
                             Icons.image_not_supported_rounded,
                             size: 60,
                             color: AppColors.textHint,
                           ),
                         ),
-                      )
-                    : const Center(
-                        child: Icon(
-                          Icons.image_not_supported_rounded,
-                          size: 60,
-                          color: AppColors.textHint,
-                        ),
-                      ),
-              );
-            },
+                );
+              },
+            ),
           ),
           if (images.length > 1)
             Positioned(
-              bottom: 12,
+              bottom: 16,
               left: 0,
               right: 0,
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: List.generate(images.length, (index) {
                   final isSelected = _selectedImageIndex == index;
-                  return AnimatedContainer(
-                    duration: const Duration(milliseconds: 200),
-                    margin: const EdgeInsets.symmetric(horizontal: 4),
-                    width: isSelected ? 20 : 8,
-                    height: 8,
-                    decoration: BoxDecoration(
-                      color: isSelected
-                          ? AppColors.primary
-                          : AppColors.textHint.withValues(alpha: 0.5),
-                      borderRadius: BorderRadius.circular(4),
+                  return GestureDetector(
+                    onTap: () => setState(() => _selectedImageIndex = index),
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 200),
+                      margin: const EdgeInsets.symmetric(horizontal: 4),
+                      width: isSelected ? 24 : 8,
+                      height: 8,
+                      decoration: BoxDecoration(
+                        color: isSelected
+                            ? scheme.primary
+                            : scheme.outline.withValues(alpha: 0.45),
+                        borderRadius: BorderRadius.circular(4),
+                      ),
                     ),
                   );
                 }),
               ),
             ),
+          Positioned(
+            top: 16,
+            right: 16,
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                color: scheme.surface.withValues(alpha: 0.85),
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 6,
+                ),
+                child: Text(
+                  '${_selectedImageIndex + 1}/${images.length}',
+                  style: TextStyle(
+                    color: scheme.onSurface,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+            ),
+          ),
         ],
       ),
     );
+  }
+
+  Widget _buildProductBenefits() {
+    final scheme = Theme.of(context).colorScheme;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+      decoration: BoxDecoration(
+        color: scheme.surfaceContainerHighest.withValues(alpha: 0.65),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(
+          color: scheme.outlineVariant.withValues(alpha: 0.55),
+        ),
+      ),
+      child: Row(
+        children: [
+          _benefitItem(
+            icon: Icons.local_shipping_outlined,
+            title: 'Fast delivery',
+            color: scheme.primary,
+          ),
+          _benefitDivider(),
+          _benefitItem(
+            icon: Icons.verified_outlined,
+            title: 'Trusted quality',
+            color: AppColors.success,
+          ),
+          _benefitDivider(),
+          _benefitItem(
+            icon: Icons.lock_outline_rounded,
+            title: 'Secure checkout',
+            color: scheme.secondary,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _benefitItem({
+    required IconData icon,
+    required String title,
+    required Color color,
+  }) {
+    return Expanded(
+      child: Column(
+        children: [
+          Icon(icon, size: 20, color: color),
+          const SizedBox(height: 5),
+          Text(
+            title,
+            textAlign: TextAlign.center,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(
+              fontSize: 10,
+              fontWeight: FontWeight.w600,
+              color: AppColors.textSecondary,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _benefitDivider() {
+    return Container(width: 1, height: 30, color: AppColors.divider);
   }
 
   Widget _buildReviewsSection(Product product) {

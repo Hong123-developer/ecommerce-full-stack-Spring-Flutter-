@@ -13,13 +13,7 @@ import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * One buyable combination of a product's options, e.g. "iPhone 14 Pro · 256GB · Purple".
- * {@link #options} line up with {@link Product#getOptionNames()} by position.
- * <p>
- * A variant that already appears in an order is never deleted - it is disabled instead,
- * so the order line keeps a valid foreign key.
- */
+
 @Entity
 @Table(
         name = "product_variants",

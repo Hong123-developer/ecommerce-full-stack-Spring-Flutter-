@@ -10,10 +10,6 @@ import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-/**
- * Plain OAuth2 providers (Facebook): runs after the provider hands back the user profile
- * and provisions/links the local account. Google goes through {@link CustomOidcUserService}.
- */
 @Service
 @RequiredArgsConstructor
 public class CustomOAuth2UserService extends DefaultOAuth2UserService {

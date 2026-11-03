@@ -2,6 +2,7 @@ package com.ecomerceshopeonline.ecomercewepapp.dto.response;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.time.LocalDate;
 import java.util.List;
 
 public record ProductResponse(
@@ -12,6 +13,11 @@ public record ProductResponse(
         String description,
         String sku,
         BigDecimal price,
+        BigDecimal originalPrice,
+        int discountPercent,
+        LocalDate discountStartDate,
+        LocalDate discountEndDate,
+        boolean discountActive,
         Integer stockQuantity,
         boolean inStock,
         String imageUrl,
@@ -41,4 +47,3 @@ public record ProductResponse(
         LocalDateTime updatedAt
 ) {
 }
-

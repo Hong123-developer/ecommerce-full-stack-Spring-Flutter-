@@ -83,18 +83,27 @@ class _InvoiceSheetState extends State<_InvoiceSheet> {
             pw.Text('ការបញ្ជាទិញ ${invoice.orderNumber}', style: regular),
             pw.Divider(height: 24),
             pw.Table(
-              columnWidths: {0: const pw.FlexColumnWidth(3), 1: const pw.FlexColumnWidth(1)},
+              columnWidths: {
+                0: const pw.FlexColumnWidth(3),
+                1: const pw.FlexColumnWidth(1),
+              },
               children: [
                 for (final item in invoice.items)
                   pw.TableRow(
                     children: [
                       pw.Padding(
                         padding: const pw.EdgeInsets.only(bottom: 8),
-                        child: pw.Text('${item.productName} x ${item.quantity}', style: regular),
+                        child: pw.Text(
+                          '${item.productName} x ${item.quantity}',
+                          style: regular,
+                        ),
                       ),
                       pw.Align(
                         alignment: pw.Alignment.centerRight,
-                        child: pw.Text('\$${item.subtotal.toStringAsFixed(2)}', style: regular),
+                        child: pw.Text(
+                          '\$${item.subtotal.toStringAsFixed(2)}',
+                          style: regular,
+                        ),
                       ),
                     ],
                   ),
@@ -153,7 +162,9 @@ class _InvoiceSheetState extends State<_InvoiceSheet> {
     try {
       final bytes = await _buildPdf();
       final directory = await getApplicationDocumentsDirectory();
-      final file = File('${directory.path}/invoice-${widget.invoice.invoiceNumber}.pdf');
+      final file = File(
+        '${directory.path}/invoice-${widget.invoice.invoiceNumber}.pdf',
+      );
       await file.writeAsBytes(bytes, flush: true);
       await SharePlus.instance.share(
         ShareParams(
@@ -164,7 +175,9 @@ class _InvoiceSheetState extends State<_InvoiceSheet> {
     } catch (error) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Unable to save or share invoice PDF: $error')),
+          SnackBar(
+            content: Text('Unable to save or share invoice PDF: $error'),
+          ),
         );
       }
     } finally {
@@ -187,7 +200,10 @@ class _InvoiceSheetState extends State<_InvoiceSheet> {
                   const Expanded(
                     child: Text(
                       'Invoice',
-                      style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700),
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.w700,
+                      ),
                     ),
                   ),
                   IconButton(
@@ -516,6 +532,12 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
 
   Widget _buildShipmentMap(Order order) {
     final hasPin = order.latitude != null && order.longitude != null;
+    final isDelivered = order.status.toUpperCase() == 'DELIVERED';
+    final isCancelled = order.status.toUpperCase() == 'CANCELLED';
+    final mapBackground = Theme.of(context).brightness == Brightness.dark
+        ? const Color(0xFF18283A)
+        : const Color(0xFFEAF3F2);
+
     return Card(
       elevation: 0,
       clipBehavior: Clip.antiAlias,
@@ -523,51 +545,161 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Container(
-            height: 150,
+            height: 164,
             width: double.infinity,
-            color: const Color(0xFFE8F1F4),
+            color: mapBackground,
             child: Stack(
               alignment: Alignment.center,
               children: [
-                CustomPaint(size: const Size(double.infinity, 150), painter: _RoutePainter()),
-                const Icon(Icons.local_shipping_rounded, color: AppColors.primary, size: 34),
+                CustomPaint(
+                  size: const Size(double.infinity, 164),
+                  painter: _RoutePainter(
+                    routeColor: Theme.of(context).colorScheme.primary,
+                    mutedColor: Theme.of(context).colorScheme.outlineVariant,
+                  ),
+                ),
+                if (!isCancelled)
+                  Positioned(
+                    left: 26,
+                    bottom: 24,
+                    child: _mapMarker(
+                      icon: Icons.storefront_rounded,
+                      color: Theme.of(context).colorScheme.primary,
+                    ),
+                  ),
                 if (hasPin)
-                  const Positioned(
-                    right: 28,
-                    bottom: 28,
-                    child: Icon(Icons.location_on_rounded, color: AppColors.error, size: 34),
+                  Positioned(
+                    right: 26,
+                    top: 24,
+                    child: _mapMarker(
+                      icon: Icons.location_on_rounded,
+                      color: isDelivered
+                          ? AppColors.success
+                          : Theme.of(context).colorScheme.secondary,
+                    ),
+                  ),
+                if (!hasPin)
+                  Icon(
+                    Icons.location_searching_rounded,
+                    size: 36,
+                    color: Theme.of(context).colorScheme.outline,
                   ),
               ],
             ),
           ),
           Padding(
-            padding: const EdgeInsets.all(16),
-            child: Row(
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 14),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Icon(Icons.map_outlined, color: AppColors.primary),
-                const SizedBox(width: 8),
-                const Expanded(
-                  child: Text(
-                    'Shipment location',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+                Row(
+                  children: [
+                    Icon(
+                      Icons.map_outlined,
+                      color: Theme.of(context).colorScheme.primary,
+                    ),
+                    const SizedBox(width: 8),
+                    const Expanded(
+                      child: Text(
+                        'Shipment location',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                    if (hasPin)
+                      TextButton(
+                        onPressed: () => _openShipmentMap(order),
+                        child: const Text('Open map'),
+                      ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  hasPin
+                      ? (isDelivered
+                            ? 'Delivered to the saved destination'
+                            : 'Delivery destination from your order')
+                      : 'No map location was saved for this order',
+                  style: TextStyle(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    fontSize: 13,
                   ),
                 ),
-                if (hasPin)
-                  TextButton(
-                    onPressed: () => launchUrl(
-                      Uri.parse(
-                        'https://www.google.com/maps/search/?api=1&query=${order.latitude},${order.longitude}',
+                if (order.shippingAddress?.trim().isNotEmpty == true) ...[
+                  const SizedBox(height: 10),
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Icon(
+                        Icons.pin_drop_outlined,
+                        size: 18,
+                        color: Theme.of(context).colorScheme.outline,
                       ),
-                      mode: LaunchMode.externalApplication,
-                    ),
-                    child: const Text('Open map'),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          order.shippingAddress!,
+                          style: const TextStyle(fontSize: 13),
+                        ),
+                      ),
+                    ],
                   ),
+                ],
+                if (hasPin) ...[
+                  const SizedBox(height: 8),
+                  Text(
+                    '${order.latitude!.toStringAsFixed(5)}, ${order.longitude!.toStringAsFixed(5)}',
+                    style: TextStyle(
+                      color: Theme.of(context).colorScheme.outline,
+                      fontSize: 11,
+                      fontFeatures: const [FontFeature.tabularFigures()],
+                    ),
+                  ),
+                ],
               ],
             ),
           ),
         ],
       ),
     );
+  }
+
+  Widget _mapMarker({required IconData icon, required Color color}) {
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: color,
+        shape: BoxShape.circle,
+        boxShadow: [
+          BoxShadow(
+            color: color.withValues(alpha: 0.28),
+            blurRadius: 12,
+            spreadRadius: 3,
+          ),
+        ],
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(8),
+        child: Icon(icon, color: Colors.white, size: 20),
+      ),
+    );
+  }
+
+  Future<void> _openShipmentMap(Order order) async {
+    final latitude = order.latitude;
+    final longitude = order.longitude;
+    if (latitude == null || longitude == null) return;
+
+    final uri = Uri.parse(
+      'https://www.google.com/maps/search/?api=1&query=$latitude,$longitude',
+    );
+    final opened = await launchUrl(uri, mode: LaunchMode.externalApplication);
+    if (!opened && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Unable to open the map application')),
+      );
+    }
   }
 
   Future<void> _showInvoice(int orderId) async {
@@ -1201,22 +1333,39 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
       return isoString;
     }
   }
-
 }
 
 class _RoutePainter extends CustomPainter {
+  final Color routeColor;
+  final Color mutedColor;
+
+  const _RoutePainter({required this.routeColor, required this.mutedColor});
+
   @override
   void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = AppColors.primary.withValues(alpha: 0.65)
+    final basePaint = Paint()
+      ..color = mutedColor.withValues(alpha: 0.55)
       ..style = PaintingStyle.stroke
-      ..strokeWidth = 3;
+      ..strokeWidth = 1.5;
+    final routePaint = Paint()
+      ..color = routeColor.withValues(alpha: 0.78)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 3.5
+      ..strokeCap = StrokeCap.round;
     final path = Path()
-      ..moveTo(28, size.height - 30)
-      ..quadraticBezierTo(size.width * 0.35, 18, size.width - 34, 32);
-    canvas.drawPath(path, paint);
+      ..moveTo(26, size.height - 26)
+      ..quadraticBezierTo(size.width * 0.28, 26, size.width * 0.56, 76)
+      ..quadraticBezierTo(size.width * 0.75, 110, size.width - 30, 30);
+    canvas.drawPath(path, routePaint);
+
+    for (var y = 18.0; y < size.height; y += 30) {
+      canvas.drawLine(Offset(0, y), Offset(size.width, y + 18), basePaint);
+    }
   }
 
   @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+  bool shouldRepaint(covariant _RoutePainter oldDelegate) {
+    return oldDelegate.routeColor != routeColor ||
+        oldDelegate.mutedColor != mutedColor;
+  }
 }
