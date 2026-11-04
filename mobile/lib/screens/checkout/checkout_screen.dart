@@ -42,6 +42,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final palette = context.palette;
     final cart = ref.watch(cartProvider);
     final language = ref.watch(appLanguageProvider);
     final addressesAsync = ref.watch(addressesProvider);
@@ -68,18 +69,9 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     final totalAmount = cart.subtotal + deliveryFee - _discount;
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: palette.background,
       appBar: AppBar(
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new_rounded),
-          onPressed: () {
-            if (context.canPop()) {
-              context.pop();
-            } else {
-              context.go('/cart');
-            }
-          },
-        ),
+        leading: const AppBackButton(fallbackRoute: '/cart'),
         title: Text(appText(language, 'checkout')),
       ),
       body: SingleChildScrollView(
@@ -133,7 +125,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                   onPressed: _isApplyingCoupon ? null : _applyCoupon,
                 ),
                 filled: true,
-                fillColor: AppColors.surface,
+                fillColor: palette.surface,
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(14),
                   borderSide: BorderSide.none,
@@ -166,7 +158,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                 hintText:
                     'e.g. Leave package at front door, call before arriving...',
                 filled: true,
-                fillColor: AppColors.surface,
+                fillColor: palette.surface,
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(14),
                   borderSide: BorderSide.none,
@@ -179,7 +171,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: AppColors.surface,
+                color: palette.surface,
                 borderRadius: BorderRadius.circular(16),
               ),
               child: Column(
@@ -202,7 +194,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                       '-\$${_discount.toStringAsFixed(2)}',
                     ),
                   ],
-                  const Divider(height: 24, color: AppColors.divider),
+                  Divider(height: 24, color: palette.divider),
                   _buildCostRow(
                     'Total Amount',
                     '\$${totalAmount.toStringAsFixed(2)}',
@@ -230,16 +222,17 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
   }
 
   Widget _buildSectionHeader(String title, IconData icon) {
+    final palette = context.palette;
     return Row(
       children: [
-        Icon(icon, size: 20, color: AppColors.primary),
+        Icon(icon, size: 20, color: palette.primary),
         const SizedBox(width: 8),
         Text(
           title,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.w700,
-            color: AppColors.textPrimary,
+            color: palette.textPrimary,
           ),
         ),
       ],
@@ -247,21 +240,22 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
   }
 
   Widget _buildAddressCard(AsyncValue<List<Address>> addressesAsync) {
+    final palette = context.palette;
     return addressesAsync.when(
       data: (addresses) {
         if (addresses.isEmpty) {
           return Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: AppColors.surface,
+              color: palette.surface,
               borderRadius: BorderRadius.circular(16),
             ),
             child: Column(
               children: [
-                const Text(
+                Text(
                   'No saved addresses found. Please add a shipping address.',
                   style: TextStyle(
-                    color: AppColors.textSecondary,
+                    color: palette.textSecondary,
                     fontSize: 13,
                   ),
                 ),
@@ -280,9 +274,9 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
         return Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: AppColors.surface,
+            color: palette.surface,
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: AppColors.primary.withValues(alpha: 0.3)),
+            border: Border.all(color: palette.primary.withValues(alpha: 0.3)),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -294,18 +288,18 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                     children: [
                       Text(
                         address.recipientName,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 15,
                           fontWeight: FontWeight.w700,
-                          color: AppColors.textPrimary,
+                          color: palette.textPrimary,
                         ),
                       ),
                       const SizedBox(width: 8),
                       Text(
                         address.phone,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 13,
-                          color: AppColors.textSecondary,
+                          color: palette.textSecondary,
                         ),
                       ),
                     ],
@@ -320,9 +314,9 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
               Text(
                 address.fullAddress ??
                     '${address.addressDetail ?? ''}, ${address.commune ?? ''}, ${address.district ?? ''}, ${address.province ?? ''}',
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 13,
-                  color: AppColors.textSecondary,
+                  color: palette.textSecondary,
                   height: 1.3,
                 ),
               ),
@@ -336,6 +330,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
   }
 
   Widget _buildDeliveryOptions(AsyncValue<List<DeliveryOption>> optionsAsync) {
+    final palette = context.palette;
     return optionsAsync.when(
       data: (options) {
         if (options.isEmpty) {
@@ -350,10 +345,10 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                 margin: const EdgeInsets.only(bottom: 8),
                 padding: const EdgeInsets.all(14),
                 decoration: BoxDecoration(
-                  color: AppColors.surface,
+                  color: palette.surface,
                   borderRadius: BorderRadius.circular(14),
                   border: Border.all(
-                    color: isSelected ? AppColors.primary : AppColors.divider,
+                    color: isSelected ? palette.primary : palette.divider,
                     width: isSelected ? 1.5 : 1,
                   ),
                 ),
@@ -364,8 +359,8 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                           ? Icons.radio_button_checked
                           : Icons.radio_button_off,
                       color: isSelected
-                          ? AppColors.primary
-                          : AppColors.textHint,
+                          ? palette.primary
+                          : palette.textHint,
                       size: 20,
                     ),
                     const SizedBox(width: 12),
@@ -375,18 +370,18 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                         children: [
                           Text(
                             option.name,
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 14,
                               fontWeight: FontWeight.w600,
-                              color: AppColors.textPrimary,
+                              color: palette.textPrimary,
                             ),
                           ),
                           if (option.estimatedTime != null)
                             Text(
                               option.estimatedTime!,
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontSize: 12,
-                                color: AppColors.textSecondary,
+                                color: palette.textSecondary,
                               ),
                             ),
                         ],
@@ -400,7 +395,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                         fontSize: 14,
                         fontWeight: FontWeight.w700,
                         color: option.fee > 0
-                            ? AppColors.textPrimary
+                            ? palette.textPrimary
                             : AppColors.success,
                       ),
                     ),
@@ -417,6 +412,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
   }
 
   Widget _buildPaymentMethods() {
+    final palette = context.palette;
     final methods = [
       {
         'id': 'KHQR',
@@ -450,10 +446,10 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
             margin: const EdgeInsets.only(bottom: 8),
             padding: const EdgeInsets.all(14),
             decoration: BoxDecoration(
-              color: AppColors.surface,
+              color: palette.surface,
               borderRadius: BorderRadius.circular(14),
               border: Border.all(
-                color: isSelected ? AppColors.primary : AppColors.divider,
+                color: isSelected ? palette.primary : palette.divider,
                 width: isSelected ? 1.5 : 1,
               ),
             ),
@@ -463,19 +459,19 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                   isSelected
                       ? Icons.radio_button_checked
                       : Icons.radio_button_off,
-                  color: isSelected ? AppColors.primary : AppColors.textHint,
+                  color: isSelected ? palette.primary : palette.textHint,
                   size: 20,
                 ),
                 const SizedBox(width: 12),
-                Icon(m['icon'] as IconData, size: 22, color: AppColors.primary),
+                Icon(m['icon'] as IconData, size: 22, color: palette.primary),
                 const SizedBox(width: 12),
                 Expanded(
                   child: Text(
                     m['name'] as String,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w600,
-                      color: AppColors.textPrimary,
+                      color: palette.textPrimary,
                     ),
                   ),
                 ),
@@ -488,10 +484,11 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
   }
 
   Widget _buildItemsSummary(Cart cart) {
+    final palette = context.palette;
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: palette.surface,
         borderRadius: BorderRadius.circular(16),
       ),
       child: Column(
@@ -510,9 +507,9 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                             imageUrl: item.imageUrl!,
                             fit: BoxFit.cover,
                             errorWidget: (_, __, ___) =>
-                                Container(color: AppColors.surfaceVariant),
+                                Container(color: palette.surfaceVariant),
                           )
-                        : Container(color: AppColors.surfaceVariant),
+                        : Container(color: palette.surfaceVariant),
                   ),
                 ),
                 const SizedBox(width: 12),
@@ -531,9 +528,9 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                       ),
                       Text(
                         'Qty: ${item.quantity}',
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 12,
-                          color: AppColors.textSecondary,
+                          color: palette.textSecondary,
                         ),
                       ),
                     ],
@@ -555,6 +552,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
   }
 
   Widget _buildCostRow(String title, String amount, {bool isTotal = false}) {
+    final palette = context.palette;
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
@@ -563,7 +561,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
           style: TextStyle(
             fontSize: isTotal ? 16 : 14,
             fontWeight: isTotal ? FontWeight.w700 : FontWeight.w400,
-            color: isTotal ? AppColors.textPrimary : AppColors.textSecondary,
+            color: isTotal ? palette.textPrimary : palette.textSecondary,
           ),
         ),
         Text(
@@ -571,7 +569,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
           style: TextStyle(
             fontSize: isTotal ? 20 : 14,
             fontWeight: isTotal ? FontWeight.w800 : FontWeight.w600,
-            color: isTotal ? AppColors.primary : AppColors.textPrimary,
+            color: isTotal ? palette.primary : palette.textPrimary,
           ),
         ),
       ],
@@ -723,11 +721,12 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      backgroundColor: Colors.white,
+      backgroundColor: context.palette.surface,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
       builder: (ctx) {
+        final palette = ctx.palette;
         return Padding(
           padding: const EdgeInsets.fromLTRB(24, 20, 24, 36),
           child: Column(
@@ -737,31 +736,31 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                 width: 40,
                 height: 4,
                 decoration: BoxDecoration(
-                  color: AppColors.divider,
+                  color: palette.divider,
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
               const SizedBox(height: 16),
-              const Text(
+              Text(
                 'Scan to Pay with Bakong / KHQR',
                 style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.w700,
-                  color: AppColors.textPrimary,
+                  color: palette.textPrimary,
                 ),
               ),
               const SizedBox(height: 6),
               Text(
                 'Amount: \$${payment.amount.toStringAsFixed(2)}',
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w800,
-                  color: AppColors.primary,
+                  color: palette.primary,
                 ),
               ),
               const SizedBox(height: 20),
 
-              // QR display
+              // QR display: always dark-on-white so banking apps can scan it.
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
@@ -794,20 +793,25 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                           : const SizedBox(
                               width: 220,
                               height: 220,
-                              child: Center(child: Text('QR not available')),
+                              child: Center(
+                                child: Text(
+                                  'QR not available',
+                                  style: TextStyle(color: Colors.black54),
+                                ),
+                              ),
                             )),
               ),
               const SizedBox(height: 20),
-              const Text(
+              Text(
                 'Scan with any Cambodian banking app that supports KHQR (ABA, ACLEDA, Wing, etc.)',
                 textAlign: TextAlign.center,
-                style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
+                style: TextStyle(fontSize: 12, color: palette.textSecondary),
               ),
               const SizedBox(height: 8),
-              const Text(
+              Text(
                 'Payment status is checked automatically after you scan.',
                 textAlign: TextAlign.center,
-                style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
+                style: TextStyle(fontSize: 12, color: palette.textSecondary),
               ),
               const SizedBox(height: 24),
               GradientButton(
@@ -831,6 +835,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
       builder: (ctx) {
+        final palette = ctx.palette;
         return Padding(
           padding: const EdgeInsets.all(20),
           child: Column(
@@ -863,7 +868,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                     isSelected
                         ? Icons.check_circle_rounded
                         : Icons.radio_button_off,
-                    color: isSelected ? AppColors.primary : AppColors.textHint,
+                    color: isSelected ? palette.primary : palette.textHint,
                   ),
                   title: Text(
                     '${addr.recipientName} (${addr.phone})',

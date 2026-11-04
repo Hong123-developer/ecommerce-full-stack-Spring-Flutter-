@@ -1,6 +1,8 @@
 package com.ecomerceshopeonline.ecomercewepapp.service;
 
 import com.ecomerceshopeonline.ecomercewepapp.dto.request.CheckoutRequest;
+import com.ecomerceshopeonline.ecomercewepapp.dto.request.CourierLocationRequest;
+import com.ecomerceshopeonline.ecomercewepapp.dto.request.UpdateShipmentRequest;
 import com.ecomerceshopeonline.ecomercewepapp.dto.response.OrderResponse;
 import com.ecomerceshopeonline.ecomercewepapp.dto.response.OrderSummaryResponse;
 import com.ecomerceshopeonline.ecomercewepapp.dto.response.OrderTrackingResponse;
@@ -38,4 +40,14 @@ public interface OrderService {
     OrderResponse adminGet(Long orderId);
 
     OrderResponse adminUpdateStatus(Long orderId, OrderStatus status);
+
+    /**
+     * Replaces the courier details of an order (tracking number, carrier, courier, estimated
+     * arrival, stage). A stage needs a SHIPPED delivery order; moving to a new stage adds a
+     * timeline step and tells the customer. Answers with what the customer's tracking shows.
+     */
+    OrderTrackingResponse adminUpdateShipment(Long orderId, UpdateShipmentRequest request);
+
+    /** Records where the courier of a SHIPPED order is now, for the customer's live map. */
+    OrderTrackingResponse adminUpdateCourierLocation(Long orderId, CourierLocationRequest request);
 }

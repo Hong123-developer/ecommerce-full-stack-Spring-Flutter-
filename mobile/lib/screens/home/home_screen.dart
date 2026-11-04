@@ -127,13 +127,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final categories = ref.watch(categoriesProvider);
     final products = ref.watch(homeProductsProvider);
     final cartCount = ref.watch(cartProvider.select((c) => c.totalQuantity));
+    final palette = context.palette;
 
     return Scaffold(
-      backgroundColor: AppColors.surface,
+      backgroundColor: palette.surface,
       drawer: const AppDrawer(),
       body: SafeArea(
         child: RefreshIndicator(
-          color: AppColors.primary,
+          color: palette.primary,
           onRefresh: _refresh,
           child: CustomScrollView(
             controller: _homeScrollController,
@@ -152,12 +153,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                             width: 42,
                             height: 42,
                             decoration: BoxDecoration(
-                              color: AppColors.surface,
+                              color: palette.surface,
                               borderRadius: BorderRadius.circular(14),
-                              border: Border.all(color: AppColors.divider),
+                              border: Border.all(color: palette.divider),
                               boxShadow: [
                                 BoxShadow(
-                                  color: AppColors.primary.withValues(
+                                  color: palette.primary.withValues(
                                     alpha: 0.08,
                                   ),
                                   blurRadius: 10,
@@ -165,10 +166,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                 ),
                               ],
                             ),
-                            child: const Center(
+                            child: Center(
                               child: Icon(
                                 Icons.menu_rounded,
-                                color: AppColors.primary,
+                                color: palette.primary,
                                 size: 22,
                               ),
                             ),
@@ -188,8 +189,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                   : 'ShopOnline',
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(
-                                color: AppColors.textPrimary,
+                              style: TextStyle(
+                                color: palette.textPrimary,
                                 fontSize: 16,
                                 fontWeight: FontWeight.w800,
                                 letterSpacing: -0.3,
@@ -208,7 +209,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       _BadgeIconButton(
                         icon: Icons.shopping_cart_outlined,
                         count: cartCount,
-                        onTap: () => context.push('/cart'),
+                        onTap: () => context.go('/cart'),
                       ),
                     ],
                   ),
@@ -226,29 +227,29 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     style: const TextStyle(fontSize: 14),
                     decoration: InputDecoration(
                       hintText: 'Search for products, brands and more...',
-                      hintStyle: const TextStyle(
+                      hintStyle: TextStyle(
                         fontSize: 13.5,
-                        color: AppColors.textHint,
+                        color: palette.textHint,
                       ),
-                      prefixIcon: const Icon(
+                      prefixIcon: Icon(
                         Icons.search_rounded,
                         size: 22,
-                        color: AppColors.textSecondary,
+                        color: palette.textSecondary,
                       ),
                       suffixIcon: Padding(
                         padding: const EdgeInsets.only(right: 8),
                         child: Icon(
                           Icons.tune_rounded,
                           size: 20,
-                          color: AppColors.primary.withValues(alpha: 0.8),
+                          color: palette.primary.withValues(alpha: 0.8),
                         ),
                       ),
                       filled: true,
-                      fillColor: AppColors.surface,
+                      fillColor: palette.surface,
                       contentPadding: const EdgeInsets.symmetric(vertical: 14),
                       border: _pillBorder(),
                       enabledBorder: _pillBorder(),
-                      focusedBorder: _pillBorder(AppColors.primary),
+                      focusedBorder: _pillBorder(palette.primary),
                     ),
                   ),
                 ),
@@ -290,10 +291,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       _ProductTile.imageHeightSmall + _ProductTile.infoHeight,
                   child: products.when(
                     data: (list) => list.isEmpty
-                        ? const Center(
+                        ? Center(
                             child: Text(
                               'No products yet',
-                              style: TextStyle(color: AppColors.textSecondary),
+                              style: TextStyle(color: palette.textSecondary),
                             ),
                           )
                         : ListView.separated(
@@ -408,20 +409,21 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         : image.startsWith('http')
         ? image
         : '${ApiConfig.baseUrl}/uploads/$image';
+    final palette = context.palette;
 
     return InkResponse(
       onTap: () => context.go(isAuth ? '/profile' : '/login'),
       radius: 25,
       child: CircleAvatar(
         radius: 21,
-        backgroundColor: AppColors.primary.withValues(alpha: 0.12),
+        backgroundColor: palette.primary.withValues(alpha: 0.12),
         backgroundImage: imageUrl.isNotEmpty
             ? CachedNetworkImageProvider(imageUrl)
             : null,
         child: imageUrl.isEmpty
-            ? const Icon(
+            ? Icon(
                 Icons.person_rounded,
-                color: AppColors.primary,
+                color: palette.primary,
                 size: 23,
               )
             : null,
@@ -433,7 +435,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     return OutlineInputBorder(
       borderRadius: BorderRadius.circular(28),
       borderSide: color == null
-          ? const BorderSide(color: AppColors.divider)
+          ? BorderSide(color: context.palette.divider)
           : BorderSide(color: color, width: 1.2),
     );
   }
@@ -450,12 +452,13 @@ class _PopularProductsGrid extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final state = ref.watch(paginatedProductsProvider);
+    final palette = context.palette;
 
     if (state.isLoading && state.products.isEmpty) {
-      return const Padding(
-        padding: EdgeInsets.all(32),
+      return Padding(
+        padding: const EdgeInsets.all(32),
         child: Center(
-          child: CircularProgressIndicator(color: AppColors.primary),
+          child: CircularProgressIndicator(color: palette.primary),
         ),
       );
     }
@@ -472,12 +475,12 @@ class _PopularProductsGrid extends ConsumerWidget {
     }
 
     if (state.products.isEmpty) {
-      return const Padding(
-        padding: EdgeInsets.all(24),
+      return Padding(
+        padding: const EdgeInsets.all(24),
         child: Center(
           child: Text(
             'No popular products available',
-            style: TextStyle(color: AppColors.textSecondary, fontSize: 13),
+            style: TextStyle(color: palette.textSecondary, fontSize: 13),
           ),
         ),
       );
@@ -506,17 +509,18 @@ class _PopularProductsGrid extends ConsumerWidget {
           },
         ),
         if (state.isLoadingMore)
-          const Padding(
-            padding: EdgeInsets.symmetric(vertical: 18),
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 18),
             child: CircularProgressIndicator(
               strokeWidth: 2.5,
-              color: AppColors.primary,
+              color: palette.primary,
             ),
           ),
       ],
     );
   }
 }
+
 
 class _BadgeIconButton extends StatelessWidget {
   final IconData icon;
@@ -531,6 +535,7 @@ class _BadgeIconButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = context.palette;
     return InkResponse(
       onTap: onTap,
       radius: 24,
@@ -545,9 +550,9 @@ class _BadgeIconButton extends StatelessWidget {
               width: 42,
               height: 42,
               decoration: BoxDecoration(
-                color: AppColors.surface,
+                color: palette.surface,
                 shape: BoxShape.circle,
-                border: Border.all(color: AppColors.divider),
+                border: Border.all(color: palette.divider),
                 boxShadow: [
                   BoxShadow(
                     color: Colors.black.withValues(alpha: 0.04),
@@ -556,7 +561,7 @@ class _BadgeIconButton extends StatelessWidget {
                   ),
                 ],
               ),
-              child: Icon(icon, size: 21, color: AppColors.textPrimary),
+              child: Icon(icon, size: 21, color: palette.textPrimary),
             ),
             if (count > 0)
               Positioned(
@@ -567,15 +572,15 @@ class _BadgeIconButton extends StatelessWidget {
                   constraints: const BoxConstraints(minWidth: 17),
                   padding: const EdgeInsets.symmetric(horizontal: 4),
                   decoration: BoxDecoration(
-                    color: AppColors.accent,
+                    color: palette.accent,
                     borderRadius: BorderRadius.circular(9),
-                    border: Border.all(color: Colors.white, width: 1.5),
+                    border: Border.all(color: palette.surface, width: 1.5),
                   ),
                   child: Center(
                     child: Text(
                       count > 9 ? '9+' : '$count',
-                      style: const TextStyle(
-                        color: Colors.white,
+                      style: TextStyle(
+                        color: palette.onAccent,
                         fontSize: 9,
                         fontWeight: FontWeight.w700,
                       ),
@@ -601,6 +606,7 @@ class _SectionHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = context.palette;
     return Padding(
       padding: const EdgeInsets.fromLTRB(18, 24, 16, 12),
       child: Row(
@@ -609,10 +615,10 @@ class _SectionHeader extends StatelessWidget {
           Expanded(
             child: Text(
               title,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 19,
                 fontWeight: FontWeight.w800,
-                color: AppColors.textPrimary,
+                color: palette.textPrimary,
                 letterSpacing: -0.3,
               ),
             ),
@@ -631,14 +637,14 @@ class _SectionHeader extends StatelessWidget {
                       style: TextStyle(
                         fontSize: 13,
                         fontWeight: FontWeight.w700,
-                        color: AppColors.primary,
+                        color: palette.primary,
                       ),
                     ),
-                    SizedBox(width: 3),
+                    const SizedBox(width: 3),
                     Icon(
                       Icons.arrow_forward_ios_rounded,
                       size: 11,
-                      color: AppColors.primary,
+                      color: palette.primary,
                     ),
                   ],
                 ),
@@ -772,9 +778,12 @@ class _HeroSlideCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final base = _parseColor(slide.accentColor) ?? const Color(0xFF1E1E22);
-    // Keep text readable on light accent colors too
+    // Keep text readable on light accent colors too. The slide color comes
+    // from the server, not the theme, so the dark ink stays fixed instead of
+    // following palette.textPrimary (which turns light in the dark style).
     final isLight = base.computeLuminance() > 0.5;
-    final fg = isLight ? AppColors.textPrimary : Colors.white;
+    const ink = AppColors.textPrimary;
+    final fg = isLight ? ink : Colors.white;
     final fgMuted = fg.withValues(alpha: 0.75);
     final hasImage = slide.imageUrl != null && slide.imageUrl!.isNotEmpty;
 
@@ -867,7 +876,7 @@ class _HeroSlideCard extends StatelessWidget {
                           vertical: 8,
                         ),
                         decoration: BoxDecoration(
-                          color: isLight ? AppColors.textPrimary : Colors.white,
+                          color: isLight ? ink : Colors.white,
                           borderRadius: BorderRadius.circular(20),
                         ),
                         child: Row(
@@ -878,9 +887,7 @@ class _HeroSlideCard extends StatelessWidget {
                                   ? slide.primaryLabel!
                                   : 'Explore Now',
                               style: TextStyle(
-                                color: isLight
-                                    ? Colors.white
-                                    : AppColors.textPrimary,
+                                color: isLight ? Colors.white : ink,
                                 fontSize: 11.5,
                                 fontWeight: FontWeight.w600,
                               ),
@@ -889,9 +896,7 @@ class _HeroSlideCard extends StatelessWidget {
                             Icon(
                               Icons.arrow_forward_rounded,
                               size: 14,
-                              color: isLight
-                                  ? Colors.white
-                                  : AppColors.textPrimary,
+                              color: isLight ? Colors.white : ink,
                             ),
                           ],
                         ),
@@ -931,14 +936,15 @@ class _ProductTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = context.palette;
     return GestureDetector(
       onTap: onTap,
       child: Container(
         width: width,
         decoration: BoxDecoration(
-          color: AppColors.surface,
+          color: palette.surface,
           borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: AppColors.divider),
+          border: Border.all(color: palette.divider),
           boxShadow: [
             BoxShadow(
               color: Colors.black.withValues(alpha: 0.045),
@@ -957,7 +963,7 @@ class _ProductTile extends StatelessWidget {
               child: Container(
                 height: imageHeight,
                 width: double.infinity,
-                color: AppColors.surfaceVariant.withValues(alpha: 0.45),
+                color: palette.surfaceVariant.withValues(alpha: 0.45),
                 child: Stack(
                   fit: StackFit.expand,
                   children: [
@@ -968,28 +974,28 @@ class _ProductTile extends StatelessWidget {
                         child: CachedNetworkImage(
                           imageUrl: product.imageUrl!,
                           fit: BoxFit.contain,
-                          placeholder: (context, url) => const Center(
+                          placeholder: (context, url) => Center(
                             child: SizedBox(
                               width: 22,
                               height: 22,
                               child: CircularProgressIndicator(
                                 strokeWidth: 2,
                                 valueColor: AlwaysStoppedAnimation<Color>(
-                                  AppColors.primary,
+                                  palette.primary,
                                 ),
                               ),
                             ),
                           ),
-                          errorWidget: (_, _, _) => const Icon(
+                          errorWidget: (_, _, _) => Icon(
                             Icons.image_not_supported_outlined,
-                            color: AppColors.textHint,
+                            color: palette.textHint,
                           ),
                         ),
                       )
                     else
-                      const Icon(
+                      Icon(
                         Icons.image_outlined,
-                        color: AppColors.textHint,
+                        color: palette.textHint,
                         size: 32,
                       ),
                     Positioned(
@@ -1037,10 +1043,13 @@ class _ProductTile extends StatelessWidget {
                     product.name,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 12.5,
                       fontWeight: FontWeight.w600,
-                      color: AppColors.primaryDark,
+                      // primaryDark is too dim on the dark style's surface
+                      color: palette.isDark
+                          ? palette.primaryLight
+                          : palette.primaryDark,
                     ),
                   ),
                   const SizedBox(height: 5),
@@ -1048,10 +1057,10 @@ class _ProductTile extends StatelessWidget {
                     children: [
                       Text(
                         '\$${product.price.toStringAsFixed(2)}',
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 13.5,
                           fontWeight: FontWeight.w700,
-                          color: AppColors.textPrimary,
+                          color: palette.textPrimary,
                         ),
                       ),
                       if (product.discountPercent > 0 &&
@@ -1059,19 +1068,19 @@ class _ProductTile extends StatelessWidget {
                         const SizedBox(width: 5),
                         Text(
                           '\$${product.originalPrice.toStringAsFixed(2)}',
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 10,
-                            color: AppColors.textSecondary,
+                            color: palette.textSecondary,
                             decoration: TextDecoration.lineThrough,
                           ),
                         ),
                         const SizedBox(width: 4),
                         Text(
                           '-${product.discountPercent}%',
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 10,
                             fontWeight: FontWeight.w700,
-                            color: AppColors.accent,
+                            color: palette.accent,
                           ),
                         ),
                       ],
@@ -1090,9 +1099,9 @@ class _ProductTile extends StatelessWidget {
                         product.reviewCount > 0
                             ? product.rating.toStringAsFixed(1)
                             : 'New',
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 11,
-                          color: AppColors.textSecondary,
+                          color: palette.textSecondary,
                         ),
                       ),
                     ],
@@ -1119,6 +1128,7 @@ class _CategoryItem extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final hasImage = category.imageUrl != null && category.imageUrl!.isNotEmpty;
+    final palette = context.palette;
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(12),
@@ -1130,12 +1140,12 @@ class _CategoryItem extends StatelessWidget {
               width: 60,
               height: 60,
               decoration: BoxDecoration(
-                color: AppColors.surfaceVariant,
+                color: palette.surfaceVariant,
                 shape: BoxShape.circle,
-                border: Border.all(color: AppColors.divider),
+                border: Border.all(color: palette.divider),
                 boxShadow: [
                   BoxShadow(
-                    color: AppColors.primary.withValues(alpha: 0.06),
+                    color: palette.primary.withValues(alpha: 0.06),
                     blurRadius: 8,
                     offset: const Offset(0, 3),
                   ),
@@ -1146,14 +1156,14 @@ class _CategoryItem extends StatelessWidget {
                     ? CachedNetworkImage(
                         imageUrl: category.imageUrl!,
                         fit: BoxFit.cover,
-                        errorWidget: (_, _, _) => const Icon(
+                        errorWidget: (_, _, _) => Icon(
                           Icons.category_outlined,
-                          color: AppColors.primary,
+                          color: palette.primary,
                         ),
                       )
-                    : const Icon(
+                    : Icon(
                         Icons.category_outlined,
-                        color: AppColors.primary,
+                        color: palette.primary,
                       ),
               ),
             ),
@@ -1163,10 +1173,10 @@ class _CategoryItem extends StatelessWidget {
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               textAlign: TextAlign.center,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 11.5,
                 fontWeight: FontWeight.w500,
-                color: AppColors.textPrimary,
+                color: palette.textPrimary,
               ),
             ),
           ],
@@ -1186,12 +1196,18 @@ class _PromoBanner extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = context.palette;
+    final onAccent = palette.onAccent;
     return GestureDetector(
       onTap: onTap,
       child: Container(
         height: 84,
         decoration: BoxDecoration(
-          gradient: AppColors.accentGradient,
+          gradient: LinearGradient(
+            colors: [palette.accent, palette.accent.withValues(alpha: 0.8)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
           borderRadius: BorderRadius.circular(16),
         ),
         clipBehavior: Clip.antiAlias,
@@ -1223,7 +1239,7 @@ class _PromoBanner extends StatelessWidget {
               padding: const EdgeInsets.symmetric(horizontal: 18),
               child: Row(
                 children: [
-                  const Expanded(
+                  Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       mainAxisAlignment: MainAxisAlignment.center,
@@ -1231,17 +1247,17 @@ class _PromoBanner extends StatelessWidget {
                         Text(
                           'NEW ARRIVALS',
                           style: TextStyle(
-                            color: Colors.white70,
+                            color: onAccent.withValues(alpha: 0.7),
                             fontSize: 9.5,
                             fontWeight: FontWeight.w600,
                             letterSpacing: 1.6,
                           ),
                         ),
-                        SizedBox(height: 4),
+                        const SizedBox(height: 4),
                         Text(
                           'Fresh styles just landed',
                           style: TextStyle(
-                            color: Colors.white,
+                            color: onAccent,
                             fontSize: 16,
                             fontWeight: FontWeight.w700,
                           ),
@@ -1256,10 +1272,10 @@ class _PromoBanner extends StatelessWidget {
                       color: Colors.white,
                       shape: BoxShape.circle,
                     ),
-                    child: const Icon(
+                    child: Icon(
                       Icons.arrow_forward_rounded,
                       size: 18,
-                      color: AppColors.accent,
+                      color: palette.accent,
                     ),
                   ),
                 ],

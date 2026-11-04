@@ -32,6 +32,7 @@ class WishlistButton extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final palette = context.palette;
     final wishlistMap = ref.watch(wishlistProvider);
     final isLiked = wishlistMap.containsKey(productId)
         ? wishlistMap[productId]!
@@ -57,14 +58,16 @@ class WishlistButton extends ConsumerWidget {
             );
             return;
           }
-          await ref.read(wishlistProvider.notifier).toggle(productId);
+          await ref
+              .read(wishlistProvider.notifier)
+              .toggle(productId, currentlyLiked: initialLiked);
           onToggled?.call();
         },
         borderRadius: BorderRadius.circular(20),
         child: Container(
           padding: const EdgeInsets.all(6),
           decoration: BoxDecoration(
-            color: backgroundColor ?? Colors.white.withValues(alpha: 0.92),
+            color: backgroundColor ?? palette.surface.withValues(alpha: 0.92),
             shape: BoxShape.circle,
             boxShadow: [
               BoxShadow(
@@ -84,7 +87,7 @@ class WishlistButton extends ConsumerWidget {
               size: size,
               color: isLiked
                   ? (activeColor ?? Colors.redAccent)
-                  : (inactiveColor ?? AppColors.textSecondary),
+                  : (inactiveColor ?? palette.textSecondary),
             ),
           ),
         ),
@@ -128,11 +131,12 @@ class ProductCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = context.palette;
     return GestureDetector(
       onTap: onTap,
       child: Container(
         decoration: BoxDecoration(
-          color: AppColors.surface,
+          color: palette.surface,
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
@@ -155,7 +159,7 @@ class ProductCard extends StatelessWidget {
                       top: Radius.circular(16),
                     ),
                     child: Container(
-                      color: Colors.white,
+                      color: palette.surface,
                       width: double.infinity,
                       height: double.infinity,
                       padding: const EdgeInsets.all(10),
@@ -163,10 +167,11 @@ class ProductCard extends StatelessWidget {
                           ? CachedNetworkImage(
                               imageUrl: imageUrl!,
                               fit: BoxFit.contain,
-                              placeholder: (_, __) => _shimmerBox(),
-                              errorWidget: (_, __, ___) => _placeholderImage(),
+                              placeholder: (_, __) => _shimmerBox(palette),
+                              errorWidget: (_, __, ___) =>
+                                  _placeholderImage(palette),
                             )
-                          : _placeholderImage(),
+                          : _placeholderImage(palette),
                     ),
                   ),
                   if (productId != null)
@@ -225,10 +230,10 @@ class ProductCard extends StatelessWidget {
                       name,
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 13,
                         fontWeight: FontWeight.w500,
-                        color: AppColors.textPrimary,
+                        color: palette.textPrimary,
                         height: 1.3,
                       ),
                     ),
@@ -246,15 +251,15 @@ class ProductCard extends StatelessWidget {
                                   size: 13,
                                   color: i < rating.round()
                                       ? AppColors.starFilled
-                                      : AppColors.starEmpty,
+                                      : palette.starEmpty,
                                 );
                               }),
                               const SizedBox(width: 4),
                               Text(
                                 '($reviewCount)',
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontSize: 11,
-                                  color: AppColors.textSecondary,
+                                  color: palette.textSecondary,
                                 ),
                               ),
                             ],
@@ -264,10 +269,10 @@ class ProductCard extends StatelessWidget {
                           children: [
                             Text(
                               '\$${price.toStringAsFixed(2)}',
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontSize: 16,
                                 fontWeight: FontWeight.w700,
-                                color: AppColors.primary,
+                                color: palette.primary,
                               ),
                             ),
                             if (discountPercent > 0 &&
@@ -276,19 +281,19 @@ class ProductCard extends StatelessWidget {
                               const SizedBox(width: 6),
                               Text(
                                 '\$${originalPrice!.toStringAsFixed(2)}',
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontSize: 11,
-                                  color: AppColors.textSecondary,
+                                  color: palette.textSecondary,
                                   decoration: TextDecoration.lineThrough,
                                 ),
                               ),
                               const SizedBox(width: 4),
                               Text(
                                 '-$discountPercent%',
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontSize: 11,
                                   fontWeight: FontWeight.w700,
-                                  color: AppColors.accent,
+                                  color: palette.accent,
                                 ),
                               ),
                             ],
@@ -306,19 +311,19 @@ class ProductCard extends StatelessWidget {
     );
   }
 
-  Widget _shimmerBox() {
+  Widget _shimmerBox(AppPalette palette) {
     return Shimmer.fromColors(
-      baseColor: AppColors.shimmerBase,
-      highlightColor: AppColors.shimmerHighlight,
+      baseColor: palette.shimmerBase,
+      highlightColor: palette.shimmerHighlight,
       child: Container(color: Colors.white),
     );
   }
 
-  Widget _placeholderImage() {
+  Widget _placeholderImage(AppPalette palette) {
     return Container(
-      color: AppColors.surfaceVariant,
-      child: const Center(
-        child: Icon(Icons.image_rounded, size: 40, color: AppColors.textHint),
+      color: palette.surfaceVariant,
+      child: Center(
+        child: Icon(Icons.image_rounded, size: 40, color: palette.textHint),
       ),
     );
   }
@@ -343,6 +348,7 @@ class CategoryChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = context.palette;
     final hasImage = imageUrl != null && imageUrl!.isNotEmpty;
     return GestureDetector(
       onTap: onTap,
@@ -355,9 +361,9 @@ class CategoryChip extends StatelessWidget {
           bottom: hasImage ? 5 : 10,
         ),
         decoration: BoxDecoration(
-          color: isSelected ? AppColors.primary : AppColors.surfaceVariant,
+          color: isSelected ? palette.primary : palette.surfaceVariant,
           borderRadius: BorderRadius.circular(12),
-          border: isSelected ? null : Border.all(color: AppColors.divider),
+          border: isSelected ? null : Border.all(color: palette.divider),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
@@ -373,12 +379,12 @@ class CategoryChip extends StatelessWidget {
                     placeholder: (_, __) => Container(
                       color: isSelected
                           ? Colors.white.withValues(alpha: 0.25)
-                          : AppColors.divider,
+                          : palette.divider,
                     ),
                     errorWidget: (_, __, ___) => Icon(
                       Icons.category_outlined,
                       size: 16,
-                      color: isSelected ? Colors.white70 : AppColors.textHint,
+                      color: isSelected ? Colors.white70 : palette.textHint,
                     ),
                   ),
                 ),
@@ -390,7 +396,7 @@ class CategoryChip extends StatelessWidget {
               style: TextStyle(
                 fontSize: 13,
                 fontWeight: FontWeight.w600,
-                color: isSelected ? Colors.white : AppColors.textSecondary,
+                color: isSelected ? palette.onPrimary : palette.textSecondary,
               ),
             ),
           ],
@@ -439,7 +445,7 @@ class OrderStatusBadge extends StatelessWidget {
         icon = Icons.cancel_rounded;
         break;
       default:
-        color = AppColors.textSecondary;
+        color = context.palette.textSecondary;
         icon = Icons.info_outline_rounded;
     }
 
@@ -485,9 +491,10 @@ class ShimmerLoading extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = context.palette;
     return Shimmer.fromColors(
-      baseColor: AppColors.shimmerBase,
-      highlightColor: AppColors.shimmerHighlight,
+      baseColor: palette.shimmerBase,
+      highlightColor: palette.shimmerHighlight,
       child: Container(
         width: width,
         height: height,
@@ -521,6 +528,7 @@ class EmptyState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = context.palette;
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(32),
@@ -530,19 +538,19 @@ class EmptyState extends StatelessWidget {
             Container(
               padding: const EdgeInsets.all(24),
               decoration: BoxDecoration(
-                color: AppColors.primary.withValues(alpha: 0.08),
+                color: palette.primary.withValues(alpha: 0.08),
                 shape: BoxShape.circle,
               ),
-              child: Icon(icon, size: 48, color: AppColors.primary),
+              child: Icon(icon, size: 48, color: palette.primary),
             ),
             const SizedBox(height: 24),
             Text(
               title,
               textAlign: TextAlign.center,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.w600,
-                color: AppColors.textPrimary,
+                color: palette.textPrimary,
               ),
             ),
             if (subtitle != null) ...[
@@ -550,9 +558,9 @@ class EmptyState extends StatelessWidget {
               Text(
                 subtitle!,
                 textAlign: TextAlign.center,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 14,
-                  color: AppColors.textSecondary,
+                  color: palette.textSecondary,
                 ),
               ),
             ],
@@ -574,7 +582,8 @@ class GradientButton extends StatelessWidget {
   final String label;
   final VoidCallback? onPressed;
   final bool isLoading;
-  final LinearGradient gradient;
+  /// Defaults to the active theme's primary gradient.
+  final LinearGradient? gradient;
   final double? width;
 
   const GradientButton({
@@ -582,24 +591,27 @@ class GradientButton extends StatelessWidget {
     required this.label,
     this.onPressed,
     this.isLoading = false,
-    this.gradient = AppColors.primaryGradient,
+    this.gradient,
     this.width,
   });
 
   @override
   Widget build(BuildContext context) {
+    final palette = context.palette;
     return SizedBox(
       width: width ?? double.infinity,
       height: 52,
       child: DecoratedBox(
         decoration: BoxDecoration(
-          gradient: onPressed != null ? gradient : null,
-          color: onPressed == null ? AppColors.textHint : null,
+          gradient: onPressed != null
+              ? (gradient ?? palette.primaryGradient)
+              : null,
+          color: onPressed == null ? palette.textHint : null,
           borderRadius: BorderRadius.circular(14),
           boxShadow: onPressed != null
               ? [
                   BoxShadow(
-                    color: AppColors.primary.withValues(alpha: 0.3),
+                    color: palette.primary.withValues(alpha: 0.3),
                     blurRadius: 12,
                     offset: const Offset(0, 4),
                   ),
@@ -629,6 +641,60 @@ class GradientButton extends StatelessWidget {
                   ),
                 ),
         ),
+      ),
+    );
+  }
+}
+
+// ──────────────────────────────────────────────
+// App Bar Back Button
+// ──────────────────────────────────────────────
+/// The app-wide back button: pops when there is a page to return to,
+/// otherwise goes to [fallbackRoute] (e.g. a web deep link opened directly).
+class AppBackButton extends StatelessWidget {
+  final String fallbackRoute;
+
+  const AppBackButton({super.key, required this.fallbackRoute});
+
+  @override
+  Widget build(BuildContext context) {
+    return IconButton(
+      icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 20),
+      tooltip: MaterialLocalizations.of(context).backButtonTooltip,
+      onPressed: () {
+        if (context.canPop()) {
+          context.pop();
+        } else {
+          context.go(fallbackRoute);
+        }
+      },
+    );
+  }
+}
+
+// ──────────────────────────────────────────────
+// App Bar Cart Button
+// ──────────────────────────────────────────────
+/// Cart icon with a live item-count badge, for app bar actions.
+class CartIconButton extends ConsumerWidget {
+  const CartIconButton({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final count = ref.watch(cartProvider.select((c) => c.totalQuantity));
+    final palette = context.palette;
+    return IconButton(
+      tooltip: appText(ref.watch(appLanguageProvider), 'cart'),
+      // /cart is a bottom-nav tab: go() switches to it (push() would stack a
+      // second copy of the tab shell).
+      onPressed: () => context.go('/cart'),
+      icon: Badge(
+        isLabelVisible: count > 0,
+        label: Text(count > 99 ? '99+' : '$count'),
+        backgroundColor: palette.primary,
+        textColor: palette.onPrimary,
+        offset: const Offset(6, -6),
+        child: const Icon(Icons.shopping_bag_outlined),
       ),
     );
   }

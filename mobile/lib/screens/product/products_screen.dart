@@ -52,35 +52,28 @@ class _ProductsScreenState extends ConsumerState<ProductsScreen> {
     final paginated = ref.watch(paginatedProductsProvider);
     final categories = ref.watch(categoriesProvider);
     final language = ref.watch(appLanguageProvider);
+    final palette = context.palette;
 
     return Scaffold(
       drawer: const AppDrawer(),
+      appBar: AppBar(
+        leading: Builder(
+          builder: (drawerContext) => IconButton(
+            icon: const Icon(Icons.menu_rounded),
+            tooltip: MaterialLocalizations.of(context).openAppDrawerTooltip,
+            onPressed: () => Scaffold.of(drawerContext).openDrawer(),
+          ),
+        ),
+        title: Text(appText(language, 'shop')),
+        actions: const [CartIconButton(), SizedBox(width: 6)],
+      ),
       body: SafeArea(
+        top: false,
         child: Column(
           children: [
-            // ─── Header with drawer ───
-            Padding(
-              padding: const EdgeInsets.fromLTRB(12, 12, 20, 0),
-              child: Row(
-                children: [
-                  Builder(
-                    builder: (drawerContext) => IconButton(
-                      icon: const Icon(Icons.menu_rounded),
-                      onPressed: () => Scaffold.of(drawerContext).openDrawer(),
-                    ),
-                  ),
-                  const SizedBox(width: 4),
-                  Text(
-                    appText(language, 'shop'),
-                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700),
-                  ),
-                ],
-              ),
-            ),
-
             // ─── Search Bar ───
             Padding(
-              padding: const EdgeInsets.fromLTRB(20, 8, 20, 8),
+              padding: const EdgeInsets.fromLTRB(20, 12, 20, 8),
               child: TextField(
                 controller: _searchCtrl,
                 onSubmitted: (val) {
@@ -194,7 +187,7 @@ class _ProductsScreenState extends ConsumerState<ProductsScreen> {
                   final items = paginated.products;
 
                   return RefreshIndicator(
-                    color: AppColors.primary,
+                    color: palette.primary,
                     onRefresh: () => ref
                         .read(paginatedProductsProvider.notifier)
                         .fetchFirstPage(),
@@ -210,10 +203,10 @@ class _ProductsScreenState extends ConsumerState<ProductsScreen> {
                               children: [
                                 Text(
                                   'Showing ${items.length} of ${paginated.totalElements} products',
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                     fontSize: 13,
                                     fontWeight: FontWeight.w600,
-                                    color: AppColors.textSecondary,
+                                    color: palette.textSecondary,
                                   ),
                                 ),
                               ],
@@ -258,12 +251,12 @@ class _ProductsScreenState extends ConsumerState<ProductsScreen> {
 
                         // Bottom spinner when scrolling & loading more items
                         if (paginated.isLoadingMore)
-                          const SliverToBoxAdapter(
+                          SliverToBoxAdapter(
                             child: Padding(
-                              padding: EdgeInsets.symmetric(vertical: 24),
+                              padding: const EdgeInsets.symmetric(vertical: 24),
                               child: Center(
                                 child: CircularProgressIndicator(
-                                  color: AppColors.primary,
+                                  color: palette.primary,
                                   strokeWidth: 2.5,
                                 ),
                               ),
@@ -284,7 +277,7 @@ class _ProductsScreenState extends ConsumerState<ProductsScreen> {
                                   ),
                                   label: const Text('Load More Products'),
                                   style: TextButton.styleFrom(
-                                    foregroundColor: AppColors.primary,
+                                    foregroundColor: palette.primary,
                                     textStyle: const TextStyle(
                                       fontWeight: FontWeight.w600,
                                     ),
@@ -300,10 +293,10 @@ class _ProductsScreenState extends ConsumerState<ProductsScreen> {
                               child: Center(
                                 child: Text(
                                   'Showing all ${paginated.totalElements} products',
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                     fontSize: 12,
                                     fontWeight: FontWeight.w500,
-                                    color: AppColors.textHint,
+                                    color: palette.textHint,
                                   ),
                                 ),
                               ),

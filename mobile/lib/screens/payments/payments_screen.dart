@@ -14,9 +14,10 @@ class PaymentsScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final paymentsAsync = ref.watch(paymentsProvider);
     final language = ref.watch(appLanguageProvider);
+    final palette = context.palette;
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: palette.background,
       appBar: AppBar(
         title: const Text('Payments'),
         actions: [
@@ -27,8 +28,8 @@ class PaymentsScreen extends ConsumerWidget {
         ],
       ),
       body: paymentsAsync.when(
-        loading: () => const Center(
-          child: CircularProgressIndicator(color: AppColors.primary),
+        loading: () => Center(
+          child: CircularProgressIndicator(color: palette.primary),
         ),
         error: (error, _) => EmptyState(
           icon: Icons.error_outline_rounded,
@@ -66,6 +67,7 @@ class _PaymentCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final paid = payment.paymentStatus.toUpperCase() == 'PAID';
+    final palette = context.palette;
     return InkWell(
       onTap: payment.orderId == null
           ? null
@@ -74,7 +76,7 @@ class _PaymentCard extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: AppColors.surface,
+          color: palette.surface,
           borderRadius: BorderRadius.circular(16),
         ),
         child: Row(
@@ -98,8 +100,8 @@ class _PaymentCard extends StatelessWidget {
                   const SizedBox(height: 4),
                   Text(
                     payment.paymentMethod.replaceAll('_', ' '),
-                    style: const TextStyle(
-                      color: AppColors.textSecondary,
+                    style: TextStyle(
+                      color: palette.textSecondary,
                       fontSize: 13,
                     ),
                   ),

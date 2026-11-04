@@ -45,9 +45,10 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen>
   Widget build(BuildContext context) {
     final ordersAsync = ref.watch(ordersProvider);
     final language = ref.watch(appLanguageProvider);
+    final palette = context.palette;
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: palette.background,
       drawer: const AppDrawer(),
       appBar: AppBar(
         leading: Builder(
@@ -60,14 +61,8 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen>
         bottom: TabBar(
           controller: _tabController,
           isScrollable: true,
-          labelColor: Colors.white,
-          unselectedLabelColor: Colors.white70,
-          indicatorColor: Colors.white,
+          tabAlignment: TabAlignment.start,
           indicatorWeight: 3,
-          labelStyle: const TextStyle(
-            fontWeight: FontWeight.w700,
-            fontSize: 13,
-          ),
           tabs: _statuses.map((status) {
             return Tab(
               text: status == 'ALL' ? appText(language, 'orders') : _formatStatus(status),
@@ -89,7 +84,7 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen>
               if (filteredOrders.isEmpty) {
                 return RefreshIndicator(
                   onRefresh: () async => ref.refresh(ordersProvider),
-                  color: AppColors.primary,
+                  color: palette.primary,
                   child: SingleChildScrollView(
                     physics: const AlwaysScrollableScrollPhysics(),
                     child: Padding(
@@ -110,7 +105,7 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen>
 
               return RefreshIndicator(
                 onRefresh: () async => ref.refresh(ordersProvider),
-                color: AppColors.primary,
+                color: palette.primary,
                 child: ListView.separated(
                   padding: const EdgeInsets.all(16),
                   itemCount: filteredOrders.length,
@@ -124,8 +119,8 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen>
             }).toList(),
           );
         },
-        loading: () => const Center(
-          child: CircularProgressIndicator(color: AppColors.primary),
+        loading: () => Center(
+          child: CircularProgressIndicator(color: palette.primary),
         ),
         error: (err, _) => Center(
           child: EmptyState(
@@ -141,12 +136,13 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen>
   }
 
   Widget _buildOrderCard(Order order) {
+    final palette = context.palette;
     return GestureDetector(
       onTap: () => context.push('/orders/${order.id}'),
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: AppColors.surface,
+          color: palette.surface,
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
@@ -168,18 +164,18 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen>
                   children: [
                     Text(
                       order.orderNumber,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w700,
-                        color: AppColors.textPrimary,
+                        color: palette.textPrimary,
                       ),
                     ),
                     if (order.createdAt != null)
                       Text(
                         _formatDate(order.createdAt!),
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 11,
-                          color: AppColors.textHint,
+                          color: palette.textHint,
                         ),
                       ),
                   ],
@@ -187,7 +183,7 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen>
                 OrderStatusBadge(status: order.status),
               ],
             ),
-            const Divider(height: 20, color: AppColors.divider),
+            Divider(height: 20, color: palette.divider),
 
             // Items preview
             if (order.items.isNotEmpty)
@@ -227,9 +223,9 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen>
                             ),
                             Text(
                               'Qty: ${item.quantity} × \$${item.unitPrice.toStringAsFixed(2)}',
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontSize: 11,
-                                color: AppColors.textSecondary,
+                                color: palette.textSecondary,
                               ),
                             ),
                           ],
@@ -245,15 +241,15 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen>
                 padding: const EdgeInsets.only(bottom: 8),
                 child: Text(
                   '+${order.items.length - 2} more item(s)',
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 12,
-                    color: AppColors.primary,
+                    color: palette.primary,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
               ),
 
-            const Divider(height: 16, color: AppColors.divider),
+            Divider(height: 16, color: palette.divider),
 
             // Bottom: Total & Action
             Row(
@@ -261,38 +257,38 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen>
               children: [
                 Row(
                   children: [
-                    const Text(
+                    Text(
                       'Total: ',
                       style: TextStyle(
                         fontSize: 13,
-                        color: AppColors.textSecondary,
+                        color: palette.textSecondary,
                       ),
                     ),
                     Text(
                       '\$${order.totalAmount.toStringAsFixed(2)}',
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w800,
-                        color: AppColors.primary,
+                        color: palette.primary,
                       ),
                     ),
                   ],
                 ),
                 Row(
-                  children: const [
+                  children: [
                     Text(
                       'Details',
                       style: TextStyle(
                         fontSize: 13,
                         fontWeight: FontWeight.w600,
-                        color: AppColors.textSecondary,
+                        color: palette.textSecondary,
                       ),
                     ),
-                    SizedBox(width: 4),
+                    const SizedBox(width: 4),
                     Icon(
                       Icons.arrow_forward_ios_rounded,
                       size: 12,
-                      color: AppColors.textSecondary,
+                      color: palette.textSecondary,
                     ),
                   ],
                 ),
@@ -305,13 +301,14 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen>
   }
 
   Widget _placeholder() {
+    final palette = context.palette;
     return Container(
-      color: AppColors.surfaceVariant,
-      child: const Center(
+      color: palette.surfaceVariant,
+      child: Center(
         child: Icon(
           Icons.shopping_bag_outlined,
           size: 20,
-          color: AppColors.textHint,
+          color: palette.textHint,
         ),
       ),
     );

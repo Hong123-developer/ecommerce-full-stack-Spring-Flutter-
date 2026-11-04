@@ -2,6 +2,8 @@ package com.ecomerceshopeonline.ecomercewepapp.service.impl;
 
 import com.ecomerceshopeonline.ecomercewepapp.config.AppProperties;
 import com.ecomerceshopeonline.ecomercewepapp.dto.request.CheckoutRequest;
+import com.ecomerceshopeonline.ecomercewepapp.dto.request.CourierLocationRequest;
+import com.ecomerceshopeonline.ecomercewepapp.dto.request.UpdateShipmentRequest;
 import com.ecomerceshopeonline.ecomercewepapp.dto.response.OrderResponse;
 import com.ecomerceshopeonline.ecomercewepapp.dto.response.OrderSummaryResponse;
 import com.ecomerceshopeonline.ecomercewepapp.dto.response.OrderTrackingResponse;
@@ -12,6 +14,7 @@ import com.ecomerceshopeonline.ecomercewepapp.entity.enums.DeliveryType;
 import com.ecomerceshopeonline.ecomercewepapp.entity.enums.OrderStatus;
 import com.ecomerceshopeonline.ecomercewepapp.entity.enums.PaymentMethod;
 import com.ecomerceshopeonline.ecomercewepapp.entity.enums.PaymentStatus;
+import com.ecomerceshopeonline.ecomercewepapp.entity.enums.ShipmentStage;
 import com.ecomerceshopeonline.ecomercewepapp.exception.BadRequestException;
 import com.ecomerceshopeonline.ecomercewepapp.exception.FieldValidationException;
 import com.ecomerceshopeonline.ecomercewepapp.exception.ResourceNotFoundException;
@@ -304,21 +307,7 @@ public class OrderServiceImpl implements OrderService {
     @Override
     @Transactional(readOnly = true)
     public OrderTrackingResponse trackingOwn(Long userId, Long orderId) {
-        Order order = requireOwned(userId, orderId);
-        List<OrderStatusHistory> history = orderStatusHistoryRepository
-                .findByOrderIdOrderByCreatedAtAsc(orderId);
-        if (history.isEmpty()) {
-            history = List.of(OrderStatusHistory.builder()
-                    .status(order.getStatus())
-                    .note("Current order status")
-                    .createdAt(order.getCreatedAt())
-                    .build());
-        }
-        return new OrderTrackingResponse(order.getId(), order.getOrderNumber(), order.getStatus(),
-                history.stream()
-                        .map(event -> new OrderTrackingResponse.Event(
-                                event.getStatus(), event.getNote(), event.getCreatedAt()))
-                        .toList());
+        return toTracking(requireOwned(userId, orderId));
     }
 
     @Override
@@ -411,6 +400,10 @@ public class OrderServiceImpl implements OrderService {
         } else {
             recordStatus(order, status, "Order status updated");
             order.setStatus(status);
+            // Courier steps belong to SHIPPED alone; any other status leaves them behind.
+            if (status != OrderStatus.SHIPPED) {
+                order.setShipmentStage(null);
+            }
             // Marking an order delivered settles a cash-on-delivery payment. A card payment is
             // only ever settled by the card provider's confirmation (or an explicit verify).
             if (status == OrderStatus.DELIVERED && order.getPayment() != null
@@ -427,9 +420,106 @@ public class OrderServiceImpl implements OrderService {
         return orderMapper.toResponse(order, true);
     }
 
+    @Override
+    @Transactional
+    public OrderTrackingResponse adminUpdateShipment(Long orderId, UpdateShipmentRequest request) {
+        Order order = requireAny(orderId);
+        ShipmentStage stage = request.stage();
+        if (stage != null && order.getStatus() != OrderStatus.SHIPPED) {
+            throw new BadRequestException("Shipment stage can only be set while the order is shipped");
+        }
+        if (stage != null && order.getDeliveryType() == DeliveryType.PICKUP) {
+            throw new BadRequestException("Pickup orders have no courier stages");
+        }
+        boolean newStage = stage != null && stage != order.getShipmentStage();
+
+        order.setTrackingNumber(request.trackingNumber());
+        order.setCarrierName(request.carrierName());
+        order.setCourierName(request.courierName());
+        order.setCourierPhone(request.courierPhone());
+        order.setEstimatedDeliveryAt(request.estimatedDeliveryAt());
+        order.setShipmentStage(stage);
+        orderRepository.save(order);
+
+        // The form sends the stage on every save; only a different one is a new step.
+        if (newStage) {
+            orderStatusHistoryRepository.save(OrderStatusHistory.builder()
+                    .order(order).status(OrderStatus.SHIPPED).shipmentStage(stage).build());
+            notificationService.shipmentStageChanged(order);
+        }
+        return toTracking(order);
+    }
+
+    @Override
+    @Transactional
+    public OrderTrackingResponse adminUpdateCourierLocation(Long orderId, CourierLocationRequest request) {
+        Order order = requireAny(orderId);
+        if (order.getStatus() != OrderStatus.SHIPPED) {
+            throw new BadRequestException("Courier location can only be set while the order is shipped");
+        }
+        order.setCourierLatitude(request.latitude());
+        order.setCourierLongitude(request.longitude());
+        order.setCourierLocationAt(LocalDateTime.now());
+        orderRepository.save(order);
+        return toTracking(order);
+    }
+
     private void recordStatus(Order order, OrderStatus status, String note) {
         orderStatusHistoryRepository.save(OrderStatusHistory.builder()
                 .order(order).status(status).note(note).build());
+    }
+
+    /**
+     * What the customer's tracking screen shows - built here alone, for the customer's own
+     * endpoint and the admin's shipment endpoints alike. Must run inside a transaction: the
+     * delivery option (for its estimated time) is a lazy relation.
+     */
+    private OrderTrackingResponse toTracking(Order order) {
+        List<OrderStatusHistory> history = orderStatusHistoryRepository
+                .findByOrderIdOrderByCreatedAtAscIdAsc(order.getId());
+        if (history.isEmpty()) {
+            // Orders from before the history table existed: show at least where they are now.
+            history = List.of(OrderStatusHistory.builder()
+                    .status(order.getStatus())
+                    .shipmentStage(order.getShipmentStage())
+                    .note("Current order status")
+                    .createdAt(order.getCreatedAt())
+                    .build());
+        }
+
+        DeliveryOption option = order.getDeliveryOption();
+        boolean courierKnown = order.getCourierName() != null || order.getCourierPhone() != null
+                || order.getCourierLatitude() != null || order.getCourierLongitude() != null;
+        OrderTrackingResponse.Courier courier = courierKnown
+                ? new OrderTrackingResponse.Courier(order.getCourierName(), order.getCourierPhone(),
+                        order.getCourierLatitude(), order.getCourierLongitude(), order.getCourierLocationAt())
+                : null;
+        OrderTrackingResponse.Destination destination = new OrderTrackingResponse.Destination(
+                order.getShippingAddress(), order.getLatitude(), order.getLongitude(),
+                order.getContactName(), order.getContactPhone());
+        OrderTrackingResponse.Support support = storeSettingsRepository.findSingleton()
+                .map(settings -> new OrderTrackingResponse.Support(
+                        settings.getSupportPhone(), settings.getSupportEmail()))
+                .orElse(null);
+
+        return new OrderTrackingResponse(
+                order.getId(),
+                order.getOrderNumber(),
+                order.getStatus(),
+                order.getShipmentStage(),
+                order.getDeliveryType(),
+                order.getDeliveryMethodName(),
+                order.getEstimatedDeliveryAt(),
+                option == null ? null : option.getEstimatedTime(),
+                order.getTrackingNumber(),
+                order.getCarrierName(),
+                courier,
+                destination,
+                support,
+                history.stream()
+                        .map(event -> new OrderTrackingResponse.Event(event.getStatus(),
+                                event.getShipmentStage(), event.getNote(), event.getCreatedAt()))
+                        .toList());
     }
 
     // ---------------------------------------------------------------- helpers
@@ -526,6 +616,7 @@ public class OrderServiceImpl implements OrderService {
             }
         }
         order.setStatus(OrderStatus.CANCELLED);
+        order.setShipmentStage(null);
         recordStatus(order, OrderStatus.CANCELLED, "Order cancelled");
 
         Payment payment = order.getPayment();

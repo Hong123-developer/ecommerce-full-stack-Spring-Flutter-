@@ -14,26 +14,17 @@ class NotificationsScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final palette = context.palette;
     final notificationsAsync = ref.watch(notificationsProvider);
     final language = ref.watch(appLanguageProvider);
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: palette.background,
       appBar: AppBar(
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new_rounded),
-          onPressed: () {
-            if (context.canPop()) {
-              context.pop();
-            } else {
-              context.go('/home');
-            }
-          },
-        ),
+        leading: const AppBackButton(fallbackRoute: '/home'),
         title: Text(appText(language, 'notifications')),
         actions: [
           TextButton(
-            style: TextButton.styleFrom(foregroundColor: Colors.white),
             onPressed: () async {
               final dio = ref.read(dioProvider);
               try {
@@ -84,8 +75,8 @@ class NotificationsScreen extends ConsumerWidget {
             ),
           );
         },
-        loading: () => const Center(
-          child: CircularProgressIndicator(color: AppColors.primary),
+        loading: () => Center(
+          child: CircularProgressIndicator(color: palette.primary),
         ),
         error: (err, _) => Center(
           child: EmptyState(
@@ -101,6 +92,8 @@ class NotificationsScreen extends ConsumerWidget {
   }
 
   Widget _buildNotificationItem(BuildContext context, WidgetRef ref, AppNotification notif) {
+    final palette = context.palette;
+    final typeColor = _getNotificationColor(notif.type, palette);
     return GestureDetector(
       onTap: () async {
         if (!notif.read) {
@@ -118,9 +111,9 @@ class NotificationsScreen extends ConsumerWidget {
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: notif.read ? AppColors.surface : AppColors.surfaceVariant,
+          color: notif.read ? palette.surface : palette.surfaceVariant,
           borderRadius: BorderRadius.circular(16),
-          border: notif.read ? null : Border.all(color: AppColors.primary.withValues(alpha: 0.2)),
+          border: notif.read ? null : Border.all(color: palette.primary.withValues(alpha: 0.2)),
           boxShadow: [
             BoxShadow(
               color: Colors.black.withValues(alpha: 0.02),
@@ -135,13 +128,13 @@ class NotificationsScreen extends ConsumerWidget {
             Container(
               padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
-                color: _getNotificationColor(notif.type).withValues(alpha: 0.12),
+                color: typeColor.withValues(alpha: 0.12),
                 shape: BoxShape.circle,
               ),
               child: Icon(
                 _getNotificationIcon(notif.type),
                 size: 20,
-                color: _getNotificationColor(notif.type),
+                color: typeColor,
               ),
             ),
             const SizedBox(width: 14),
@@ -157,7 +150,7 @@ class NotificationsScreen extends ConsumerWidget {
                           style: TextStyle(
                             fontSize: 14,
                             fontWeight: notif.read ? FontWeight.w600 : FontWeight.w700,
-                            color: AppColors.textPrimary,
+                            color: palette.textPrimary,
                           ),
                         ),
                       ),
@@ -165,8 +158,8 @@ class NotificationsScreen extends ConsumerWidget {
                         Container(
                           width: 8,
                           height: 8,
-                          decoration: const BoxDecoration(
-                            color: AppColors.primary,
+                          decoration: BoxDecoration(
+                            color: palette.primary,
                             shape: BoxShape.circle,
                           ),
                         ),
@@ -175,9 +168,9 @@ class NotificationsScreen extends ConsumerWidget {
                   const SizedBox(height: 4),
                   Text(
                     notif.message,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 13,
-                      color: AppColors.textSecondary,
+                      color: palette.textSecondary,
                       height: 1.3,
                     ),
                   ),
@@ -185,7 +178,7 @@ class NotificationsScreen extends ConsumerWidget {
                     const SizedBox(height: 6),
                     Text(
                       _formatDate(notif.createdAt!),
-                      style: const TextStyle(fontSize: 11, color: AppColors.textHint),
+                      style: TextStyle(fontSize: 11, color: palette.textHint),
                     ),
                   ],
                 ],
@@ -210,14 +203,14 @@ class NotificationsScreen extends ConsumerWidget {
     }
   }
 
-  Color _getNotificationColor(String type) {
+  Color _getNotificationColor(String type, AppPalette palette) {
     switch (type.toUpperCase()) {
       case 'ORDER_STATUS':
       case 'ORDER':
-        return AppColors.primary;
+        return palette.primary;
       case 'PROMOTION':
       case 'DISCOUNT':
-        return AppColors.accent;
+        return palette.accent;
       default:
         return AppColors.info;
     }

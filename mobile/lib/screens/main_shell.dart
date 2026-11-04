@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../config/theme.dart';
 import '../providers/providers.dart';
 import '../widgets/app_drawer.dart';
 
@@ -15,6 +16,7 @@ class MainShell extends ConsumerWidget {
     final cart = ref.watch(cartProvider);
     final themeStyle = ref.watch(themeStyleProvider);
     final language = ref.watch(appLanguageProvider);
+    final palette = context.palette;
 
     final currentIndex = navigationShell.currentIndex;
 
@@ -53,7 +55,7 @@ class MainShell extends ConsumerWidget {
       body: navigationShell,
       bottomNavigationBar: Container(
         decoration: BoxDecoration(
-          color: themeStyle.isDark ? const Color(0xFF1E293B) : Colors.white,
+          color: palette.surface,
           borderRadius: const BorderRadius.only(
             topLeft: Radius.circular(30),
             topRight: Radius.circular(30),
@@ -90,9 +92,7 @@ class MainShell extends ConsumerWidget {
                   isActive: isActive,
                   badgeCount: dest.badgeCount,
                   activeColor: themeStyle.navActiveColor,
-                  inactiveColor: themeStyle.isDark
-                      ? const Color(0xFF94A3B8)
-                      : const Color(0xFF8C93A4),
+                  inactiveColor: palette.textSecondary,
                   onTap: () {
                     if (currentIndex != index) {
                       navigationShell.goBranch(index, initialLocation: false);

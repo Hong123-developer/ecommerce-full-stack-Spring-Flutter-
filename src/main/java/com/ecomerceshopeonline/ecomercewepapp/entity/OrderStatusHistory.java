@@ -1,6 +1,7 @@
 package com.ecomerceshopeonline.ecomercewepapp.entity;
 
 import com.ecomerceshopeonline.ecomercewepapp.entity.enums.OrderStatus;
+import com.ecomerceshopeonline.ecomercewepapp.entity.enums.ShipmentStage;
 import jakarta.persistence.*;
 import lombok.*;
 import org.springframework.data.annotation.CreatedDate;
@@ -32,6 +33,14 @@ public class OrderStatusHistory {
     @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false, length = 20)
     private OrderStatus status;
+
+    /**
+     * Set on the rows that record a courier step (status SHIPPED); null on plain status
+     * changes and on every row written before courier steps existed.
+     */
+    @Enumerated(EnumType.STRING)
+    @Column(name = "shipment_stage", length = 20)
+    private ShipmentStage shipmentStage;
 
     @Column(name = "note", length = 255)
     private String note;

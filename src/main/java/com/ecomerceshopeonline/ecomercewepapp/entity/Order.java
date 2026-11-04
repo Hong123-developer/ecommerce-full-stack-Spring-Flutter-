@@ -2,6 +2,7 @@ package com.ecomerceshopeonline.ecomercewepapp.entity;
 
 import com.ecomerceshopeonline.ecomercewepapp.entity.enums.DeliveryType;
 import com.ecomerceshopeonline.ecomercewepapp.entity.enums.OrderStatus;
+import com.ecomerceshopeonline.ecomercewepapp.entity.enums.ShipmentStage;
 import jakarta.persistence.*;
 import lombok.Builder;
 import lombok.Getter;
@@ -10,6 +11,7 @@ import lombok.Setter;
 import lombok.experimental.SuperBuilder;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -108,6 +110,44 @@ public class Order extends BaseEntity {
 
     @Column(name = "longitude")
     private Double longitude;
+
+    // ---- the courier's side of a shipped order, filled in by an admin. Every column below
+    // is null until then (and always on older orders), so readers must cope with that.
+
+    /** The courier's parcel reference, e.g. JT8800123456. */
+    @Column(name = "tracking_number", length = 60)
+    private String trackingNumber;
+
+    /** Who carries it, e.g. "J&T Express" - may differ from the option the shopper chose. */
+    @Column(name = "carrier_name", length = 80)
+    private String carrierName;
+
+    /** The rider bringing it, for the shopper to recognise and call. */
+    @Column(name = "courier_name", length = 120)
+    private String courierName;
+
+    @Column(name = "courier_phone", length = 30)
+    private String courierPhone;
+
+    /** When the store expects it to arrive. */
+    @Column(name = "estimated_delivery_at")
+    private LocalDateTime estimatedDeliveryAt;
+
+    /** The courier's step while SHIPPED; cleared whenever the order moves to another status. */
+    @Enumerated(EnumType.STRING)
+    @Column(name = "shipment_stage", length = 20)
+    private ShipmentStage shipmentStage;
+
+    /** The courier's last reported position, for the live map. */
+    @Column(name = "courier_latitude")
+    private Double courierLatitude;
+
+    @Column(name = "courier_longitude")
+    private Double courierLongitude;
+
+    /** When that position was reported - lets the app tell a live pin from a stale one. */
+    @Column(name = "courier_location_at")
+    private LocalDateTime courierLocationAt;
 
     @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default

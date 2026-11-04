@@ -222,6 +222,21 @@ final authProvider = NotifierProvider<AuthNotifier, AuthState>(
   AuthNotifier.new,
 );
 
+/// The signed-in customer's id, or null when signed out.
+///
+/// Every provider that holds per-customer data (orders, cart, wishlist,
+/// addresses, liked flags, ...) watches this, so its cached data is dropped
+/// and refetched whenever a different customer signs in or the user signs
+/// out. Without it, the next account would see the previous one's data.
+final currentUserIdProvider = Provider<int?>((ref) {
+  return ref.watch(
+    authProvider.select(
+      (auth) =>
+          auth.status == AuthStatus.authenticated ? auth.user?.id : null,
+    ),
+  );
+});
+
 // ──────────────────────────────────────────────
 // Categories
 // ──────────────────────────────────────────────
@@ -289,6 +304,7 @@ final productFilterProvider =
     );
 
 final productsProvider = FutureProvider<PageData<Product>>((ref) async {
+  ref.watch(currentUserIdProvider);
   final dio = ref.watch(dioProvider);
   final filter = ref.watch(productFilterProvider);
   final params = <String, dynamic>{
@@ -355,6 +371,8 @@ class PaginatedProductsNotifier extends Notifier<PaginatedProductsState> {
 
   @override
   PaginatedProductsState build() {
+    // Products carry the customer's liked flags, so reload on account change.
+    ref.watch(currentUserIdProvider);
     ref.listen(productFilterProvider, (_, __) {
       fetchFirstPage();
     });
@@ -363,6 +381,7 @@ class PaginatedProductsNotifier extends Notifier<PaginatedProductsState> {
   }
 
   Future<void> fetchFirstPage() async {
+    if (!ref.mounted) return;
     state = state.copyWith(isLoading: true, error: null);
     try {
       final filter = ref.read(productFilterProvider);
@@ -378,6 +397,7 @@ class PaginatedProductsNotifier extends Notifier<PaginatedProductsState> {
       if (filter.maxPrice != null) params['maxPrice'] = filter.maxPrice;
 
       final res = await _dio.get(ApiConfig.products, queryParameters: params);
+      if (!ref.mounted) return;
       final pageData = PageData.fromJson(res.data['data'], Product.fromJson);
 
       state = PaginatedProductsState(
@@ -390,6 +410,7 @@ class PaginatedProductsNotifier extends Notifier<PaginatedProductsState> {
         isLoadingMore: false,
       );
     } catch (e) {
+      if (!ref.mounted) return;
       state = state.copyWith(isLoading: false, error: e.toString());
     }
   }
@@ -413,6 +434,7 @@ class PaginatedProductsNotifier extends Notifier<PaginatedProductsState> {
       if (filter.maxPrice != null) params['maxPrice'] = filter.maxPrice;
 
       final res = await _dio.get(ApiConfig.products, queryParameters: params);
+      if (!ref.mounted) return;
       final pageData = PageData.fromJson(res.data['data'], Product.fromJson);
 
       final combined = [...state.products, ...pageData.content];
@@ -427,6 +449,7 @@ class PaginatedProductsNotifier extends Notifier<PaginatedProductsState> {
         isLoadingMore: false,
       );
     } catch (e) {
+      if (!ref.mounted) return;
       state = state.copyWith(isLoadingMore: false, error: e.toString());
     }
   }
@@ -439,6 +462,7 @@ final paginatedProductsProvider =
 
 // Home feed: newest products, independent of the Shop tab's search/category filter.
 final homeProductsProvider = FutureProvider<List<Product>>((ref) async {
+  ref.watch(currentUserIdProvider);
   final dio = ref.watch(dioProvider);
   final response = await dio.get(
     ApiConfig.products,
@@ -451,6 +475,7 @@ final productDetailProvider = FutureProvider.family<Product, int>((
   ref,
   id,
 ) async {
+  ref.watch(currentUserIdProvider);
   final dio = ref.watch(dioProvider);
   final response = await dio.get('${ApiConfig.products}/$id');
   return Product.fromJson(response.data['data']);
@@ -462,6 +487,9 @@ final productDetailProvider = FutureProvider.family<Product, int>((
 class CartNotifier extends Notifier<Cart> {
   @override
   Cart build() {
+    // A different customer means a different cart: start empty, load theirs.
+    final userId = ref.watch(currentUserIdProvider);
+    if (userId != null) Future.microtask(fetchCart);
     return Cart.empty();
   }
 
@@ -470,9 +498,11 @@ class CartNotifier extends Notifier<Cart> {
   Future<void> fetchCart() async {
     try {
       final response = await _dio.get(ApiConfig.cart);
+      // The customer may have changed while the request was in flight.
+      if (!ref.mounted) return;
       state = Cart.fromJson(response.data['data']);
     } catch (_) {
-      state = Cart.empty();
+      if (ref.mounted) state = Cart.empty();
     }
   }
 
@@ -511,7 +541,7 @@ class CartNotifier extends Notifier<Cart> {
   Future<void> clearCart() async {
     try {
       await _dio.delete(ApiConfig.cart);
-      state = Cart.empty();
+      if (ref.mounted) state = Cart.empty();
     } catch (_) {}
   }
 }
@@ -522,6 +552,7 @@ final cartProvider = NotifierProvider<CartNotifier, Cart>(CartNotifier.new);
 // Orders
 // ──────────────────────────────────────────────
 final ordersProvider = FutureProvider<List<Order>>((ref) async {
+  ref.watch(currentUserIdProvider);
   final dio = ref.watch(dioProvider);
   final response = await dio.get(
     ApiConfig.orders,
@@ -532,6 +563,7 @@ final ordersProvider = FutureProvider<List<Order>>((ref) async {
 });
 
 final paymentsProvider = FutureProvider<List<PaymentData>>((ref) async {
+  ref.watch(currentUserIdProvider);
   final response = await ref
       .watch(dioProvider)
       .get(
@@ -543,6 +575,7 @@ final paymentsProvider = FutureProvider<List<PaymentData>>((ref) async {
 });
 
 final orderDetailProvider = FutureProvider.family<Order, int>((ref, id) async {
+  ref.watch(currentUserIdProvider);
   final dio = ref.watch(dioProvider);
   final response = await dio.get('${ApiConfig.orders}/$id');
   return Order.fromJson(response.data['data']);
@@ -552,6 +585,7 @@ final orderTrackingProvider = FutureProvider.family<OrderTracking, int>((
   ref,
   id,
 ) async {
+  ref.watch(currentUserIdProvider);
   final response = await ref
       .watch(dioProvider)
       .get(ApiConfig.orderTracking(id));
@@ -562,6 +596,7 @@ final orderInvoiceProvider = FutureProvider.family<Invoice, int>((
   ref,
   id,
 ) async {
+  ref.watch(currentUserIdProvider);
   final response = await ref.watch(dioProvider).get(ApiConfig.orderInvoice(id));
   return Invoice.fromJson(response.data['data']);
 });
@@ -570,6 +605,7 @@ final orderInvoiceProvider = FutureProvider.family<Invoice, int>((
 // Addresses
 // ──────────────────────────────────────────────
 final addressesProvider = FutureProvider<List<Address>>((ref) async {
+  ref.watch(currentUserIdProvider);
   final dio = ref.watch(dioProvider);
   final response = await dio.get(ApiConfig.addresses);
   final data = response.data['data'];
@@ -598,6 +634,7 @@ final heroSlidesProvider = FutureProvider<List<HeroSlide>>((ref) async {
 final notificationsProvider = FutureProvider<List<AppNotification>>((
   ref,
 ) async {
+  ref.watch(currentUserIdProvider);
   final dio = ref.watch(dioProvider);
   final response = await dio.get(
     ApiConfig.notifications,
@@ -610,6 +647,7 @@ final notificationsProvider = FutureProvider<List<AppNotification>>((
 });
 
 final unreadCountProvider = FutureProvider<int>((ref) async {
+  ref.watch(currentUserIdProvider);
   final dio = ref.watch(dioProvider);
   try {
     final response = await dio.get(ApiConfig.unreadCount);
@@ -641,6 +679,7 @@ final reviewsProvider = FutureProvider.family<PageData<Review>, int>((
   ref,
   productId,
 ) async {
+  ref.watch(currentUserIdProvider);
   final dio = ref.watch(dioProvider);
   final response = await dio.get(
     '${ApiConfig.products}/$productId/reviews',
@@ -668,17 +707,25 @@ final reviewSummaryProvider = FutureProvider.family<ReviewSummary, int>((
 /// Stores local state so the heart animation is instant, then syncs with the API.
 class WishlistNotifier extends Notifier<Map<int, bool>> {
   @override
-  Map<int, bool> build() => {};
+  Map<int, bool> build() {
+    // Liked flags belong to the signed-in customer.
+    ref.watch(currentUserIdProvider);
+    return {};
+  }
 
   Dio get _dio => ref.read(dioProvider);
 
   /// Toggle a product's liked state. Returns true if now liked, false if unliked.
-  Future<bool> toggle(int productId) async {
-    final wasLiked = state[productId] ?? false;
+  ///
+  /// [currentlyLiked] is the server's flag for the product, used until this
+  /// session has its own record (e.g. right after a customer signs in).
+  Future<bool> toggle(int productId, {bool currentlyLiked = false}) async {
+    final wasLiked = state[productId] ?? currentlyLiked;
     // Optimistic update
     state = {...state, productId: !wasLiked};
     try {
       await _dio.post('${ApiConfig.products}/$productId/like');
+      if (!ref.mounted) return !wasLiked;
       // Refresh related providers so counts update
       ref.invalidate(productsProvider);
       ref.invalidate(homeProductsProvider);
@@ -687,7 +734,7 @@ class WishlistNotifier extends Notifier<Map<int, bool>> {
       return !wasLiked;
     } catch (_) {
       // Revert on failure
-      state = {...state, productId: wasLiked};
+      if (ref.mounted) state = {...state, productId: wasLiked};
       return wasLiked;
     }
   }
@@ -711,6 +758,7 @@ final wishlistProvider = NotifierProvider<WishlistNotifier, Map<int, bool>>(
 
 /// Paginated wishlist page for the My Wishlist screen.
 final wishlistPageProvider = FutureProvider<List<Product>>((ref) async {
+  ref.watch(currentUserIdProvider);
   final dio = ref.watch(dioProvider);
   try {
     final response = await dio.get(

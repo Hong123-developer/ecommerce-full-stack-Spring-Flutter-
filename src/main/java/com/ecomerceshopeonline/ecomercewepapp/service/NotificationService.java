@@ -27,6 +27,12 @@ public interface NotificationService {
     /** To the customer: an admin changed the status of {@code order} (to its current one). */
     void orderStatusChanged(Order order);
 
+    /**
+     * To the customer: the courier moved {@code order} on to its current shipment stage
+     * (picked up, in transit, out for delivery). Does nothing while it has no stage.
+     */
+    void shipmentStageChanged(Order order);
+
     /** To the customer: {@code order} was cancelled because it was never paid. */
     void orderExpired(Order order);
 

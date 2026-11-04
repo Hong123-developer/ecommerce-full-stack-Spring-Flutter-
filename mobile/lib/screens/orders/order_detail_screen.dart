@@ -5,7 +5,6 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -21,6 +20,7 @@ import '../../models/models.dart';
 import '../../providers/providers.dart';
 import '../../services/api_client.dart';
 import '../../widgets/common_widgets.dart';
+import 'order_tracking_section.dart';
 
 class OrderDetailScreen extends ConsumerStatefulWidget {
   final int orderId;
@@ -187,6 +187,7 @@ class _InvoiceSheetState extends State<_InvoiceSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final palette = context.palette;
     return SafeArea(
       child: Padding(
         padding: const EdgeInsets.fromLTRB(20, 20, 20, 24),
@@ -220,13 +221,13 @@ class _InvoiceSheetState extends State<_InvoiceSheet> {
               ),
               Text(
                 widget.invoice.invoiceNumber,
-                style: const TextStyle(color: AppColors.textSecondary),
+                style: TextStyle(color: palette.textSecondary),
               ),
               if (_busy) const LinearProgressIndicator(),
               const SizedBox(height: 8),
               Text(
                 'Order ${widget.invoice.orderNumber}',
-                style: const TextStyle(color: AppColors.textSecondary),
+                style: TextStyle(color: palette.textSecondary),
               ),
               const Divider(height: 24),
               ...widget.invoice.items.map(
@@ -256,7 +257,7 @@ class _InvoiceSheetState extends State<_InvoiceSheet> {
                 const SizedBox(height: 16),
                 Text(
                   widget.invoice.shippingAddress!,
-                  style: const TextStyle(color: AppColors.textSecondary),
+                  style: TextStyle(color: palette.textSecondary),
                 ),
               ],
             ],
@@ -302,29 +303,19 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
   @override
   Widget build(BuildContext context) {
     final orderAsync = ref.watch(orderDetailProvider(widget.orderId));
-    final trackingAsync = ref.watch(orderTrackingProvider(widget.orderId));
     final language = ref.watch(appLanguageProvider);
+    final palette = context.palette;
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: palette.background,
       appBar: AppBar(
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new_rounded),
-          onPressed: () {
-            if (context.canPop()) {
-              context.pop();
-            } else {
-              context.go('/orders');
-            }
-          },
-        ),
+        leading: const AppBackButton(fallbackRoute: '/orders'),
         title: Text(appText(language, 'orderDetails')),
       ),
       body: orderAsync.when(
-        data: (order) => _buildBody(order, trackingAsync),
-        loading: () => const Center(
-          child: CircularProgressIndicator(color: AppColors.primary),
-        ),
+        data: _buildBody,
+        loading: () =>
+            Center(child: CircularProgressIndicator(color: palette.primary)),
         error: (err, _) => Center(
           child: EmptyState(
             icon: Icons.error_outline_rounded,
@@ -338,79 +329,56 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
     );
   }
 
-  Widget _buildBody(Order order, AsyncValue<OrderTracking> trackingAsync) {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // ─── Status Stepper ───
-          _buildStatusTracker(order.status),
-          const SizedBox(height: 16),
-          _buildTrackingCard(trackingAsync),
-          const SizedBox(height: 16),
-          _buildShipmentMap(order),
-          const SizedBox(height: 16),
+  Widget _buildBody(Order order) {
+    return RefreshIndicator(
+      color: context.palette.primary,
+      onRefresh: () async {
+        ref.invalidate(orderTrackingProvider(order.id));
+        ref.invalidate(orderDetailProvider(order.id));
+        try {
+          await ref.read(orderDetailProvider(order.id).future);
+        } catch (_) {
+          // The error state is rendered by the provider's AsyncValue.
+        }
+      },
+      child: SingleChildScrollView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // ─── Order Tracking ───
+            OrderTrackingSection(order: order),
+            const SizedBox(height: 16),
+            _buildShipmentMap(order),
+            const SizedBox(height: 16),
 
-          // ─── Order Overview Card ───
-          _buildOverviewCard(order),
-          const SizedBox(height: 16),
+            // ─── Order Overview Card ───
+            _buildOverviewCard(order),
+            const SizedBox(height: 16),
 
-          // ─── Items Card ───
-          _buildItemsCard(order),
-          const SizedBox(height: 16),
+            // ─── Items Card ───
+            _buildItemsCard(order),
+            const SizedBox(height: 16),
 
-          // ─── Delivery Info Card ───
-          _buildDeliveryInfoCard(order),
-          const SizedBox(height: 16),
+            // ─── Delivery Info Card ───
+            _buildDeliveryInfoCard(order),
+            const SizedBox(height: 16),
 
-          // ─── Price Breakdown Card ───
-          _buildPriceBreakdownCard(order),
-          const SizedBox(height: 24),
+            // ─── Price Breakdown Card ───
+            _buildPriceBreakdownCard(order),
+            const SizedBox(height: 24),
 
-          SizedBox(
-            width: double.infinity,
-            height: 50,
-            child: OutlinedButton.icon(
-              onPressed: () => _showInvoice(order.id),
-              icon: const Icon(Icons.receipt_long_rounded),
-              label: Text(
-                appText(ref.read(appLanguageProvider), 'viewInvoice'),
-              ),
-              style: OutlinedButton.styleFrom(
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(14),
-                ),
-              ),
-            ),
-          ),
-          const SizedBox(height: 12),
-
-          // ─── Action Buttons (Cancel / Pay) ───
-          if (order.cancellable) ...[
             SizedBox(
               width: double.infinity,
               height: 50,
               child: OutlinedButton.icon(
-                onPressed: _isCancelling
-                    ? null
-                    : () => _confirmCancelOrder(order),
-                icon: _isCancelling
-                    ? const SizedBox(
-                        width: 18,
-                        height: 18,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          color: AppColors.error,
-                        ),
-                      )
-                    : const Icon(Icons.cancel_outlined, color: AppColors.error),
-                label: const Text(
-                  'Cancel Order',
-                  style: TextStyle(color: AppColors.error),
+                onPressed: () => _showInvoice(order.id),
+                icon: const Icon(Icons.receipt_long_rounded),
+                label: Text(
+                  appText(ref.read(appLanguageProvider), 'viewInvoice'),
                 ),
                 style: OutlinedButton.styleFrom(
-                  side: const BorderSide(color: AppColors.error),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(14),
                   ),
@@ -418,113 +386,54 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
               ),
             ),
             const SizedBox(height: 12),
-          ],
 
-          if (order.paymentStatus.toUpperCase() == 'PENDING' &&
-              order.paymentMethod.toUpperCase() == 'KHQR' &&
-              order.status.toUpperCase() != 'CANCELLED')
-            GradientButton(
-              label: 'Pay Now with KHQR',
-              onPressed: () => _startPayment(order),
-            ),
-
-          const SizedBox(height: 20),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildTrackingCard(AsyncValue<OrderTracking> trackingAsync) {
-    return trackingAsync.when(
-      loading: () => const Card(
-        child: Padding(
-          padding: EdgeInsets.all(16),
-          child: Center(child: CircularProgressIndicator()),
-        ),
-      ),
-      error: (_, __) => const SizedBox.shrink(),
-      data: (tracking) => Card(
-        elevation: 0,
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  const Icon(
-                    Icons.local_shipping_outlined,
-                    color: AppColors.primary,
-                  ),
-                  const SizedBox(width: 8),
-                  Text(
-                    appText(ref.read(appLanguageProvider), 'orderTracking'),
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 14),
-              ...tracking.events.asMap().entries.map((entry) {
-                final event = entry.value;
-                final last = entry.key == tracking.events.length - 1;
-                return Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Column(
-                      children: [
-                        Icon(
-                          last
-                              ? Icons.radio_button_checked
-                              : Icons.check_circle,
-                          size: 18,
-                          color: last ? AppColors.primary : AppColors.success,
-                        ),
-                        if (!last)
-                          Container(
-                            width: 2,
-                            height: 32,
-                            color: AppColors.divider,
+            // ─── Action Buttons (Cancel / Pay) ───
+            if (order.cancellable) ...[
+              SizedBox(
+                width: double.infinity,
+                height: 50,
+                child: OutlinedButton.icon(
+                  onPressed: _isCancelling
+                      ? null
+                      : () => _confirmCancelOrder(order),
+                  icon: _isCancelling
+                      ? const SizedBox(
+                          width: 18,
+                          height: 18,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: AppColors.error,
                           ),
-                      ],
-                    ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: Padding(
-                        padding: const EdgeInsets.only(bottom: 12),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              event.status,
-                              style: const TextStyle(
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                            if (event.note != null)
-                              Text(
-                                event.note!,
-                                style: const TextStyle(fontSize: 12),
-                              ),
-                            if (event.createdAt != null)
-                              Text(
-                                _formatDate(event.createdAt!),
-                                style: const TextStyle(
-                                  fontSize: 11,
-                                  color: AppColors.textHint,
-                                ),
-                              ),
-                          ],
+                        )
+                      : const Icon(
+                          Icons.cancel_outlined,
+                          color: AppColors.error,
                         ),
-                      ),
+                  label: const Text(
+                    'Cancel Order',
+                    style: TextStyle(color: AppColors.error),
+                  ),
+                  style: OutlinedButton.styleFrom(
+                    side: const BorderSide(color: AppColors.error),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14),
                     ),
-                  ],
-                );
-              }),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 12),
             ],
-          ),
+
+            if (order.paymentStatus.toUpperCase() == 'PENDING' &&
+                order.paymentMethod.toUpperCase() == 'KHQR' &&
+                order.status.toUpperCase() != 'CANCELLED')
+              GradientButton(
+                label: 'Pay Now with KHQR',
+                onPressed: () => _startPayment(order),
+              ),
+
+            const SizedBox(height: 20),
+          ],
         ),
       ),
     );
@@ -712,165 +621,12 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
     );
   }
 
-  Widget _buildStatusTracker(String status) {
-    final steps = [
-      'PENDING',
-      'CONFIRMED',
-      'PROCESSING',
-      'SHIPPED',
-      'DELIVERED',
-    ];
-    final upperStatus = status.toUpperCase();
-
-    if (upperStatus == 'CANCELLED') {
-      return Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: AppColors.cancelled.withValues(alpha: 0.1),
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: AppColors.cancelled.withValues(alpha: 0.3)),
-        ),
-        child: Row(
-          children: const [
-            Icon(Icons.cancel_rounded, color: AppColors.cancelled, size: 28),
-            SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Order Cancelled',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w700,
-                      color: AppColors.cancelled,
-                    ),
-                  ),
-                  SizedBox(height: 2),
-                  Text(
-                    'This order has been cancelled and is no longer being processed.',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: AppColors.textSecondary,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      );
-    }
-
-    final currentIndex = steps.indexOf(upperStatus);
-    final activeIndex = currentIndex >= 0 ? currentIndex : 0;
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 18),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: List.generate(steps.length, (index) {
-          final isCompleted = index <= activeIndex;
-          final isCurrent = index == activeIndex;
-          final isLast = index == steps.length - 1;
-
-          return Expanded(
-            child: Row(
-              children: [
-                Expanded(
-                  child: Column(
-                    children: [
-                      Container(
-                        width: 28,
-                        height: 28,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: isCompleted
-                              ? AppColors.primary
-                              : AppColors.surfaceVariant,
-                          border: isCurrent
-                              ? Border.all(
-                                  color: AppColors.primaryLight,
-                                  width: 2,
-                                )
-                              : null,
-                        ),
-                        child: Center(
-                          child: isCompleted
-                              ? const Icon(
-                                  Icons.check,
-                                  size: 16,
-                                  color: Colors.white,
-                                )
-                              : Text(
-                                  '${index + 1}',
-                                  style: const TextStyle(
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w600,
-                                    color: AppColors.textHint,
-                                  ),
-                                ),
-                        ),
-                      ),
-                      const SizedBox(height: 6),
-                      Text(
-                        _stepLabel(steps[index]),
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          fontSize: 10,
-                          fontWeight: isCompleted
-                              ? FontWeight.w700
-                              : FontWeight.w500,
-                          color: isCompleted
-                              ? AppColors.primary
-                              : AppColors.textHint,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                if (!isLast)
-                  Container(
-                    width: 14,
-                    height: 2,
-                    color: index < activeIndex
-                        ? AppColors.primary
-                        : AppColors.divider,
-                  ),
-              ],
-            ),
-          );
-        }),
-      ),
-    );
-  }
-
-  String _stepLabel(String step) {
-    switch (step) {
-      case 'PENDING':
-        return 'Placed';
-      case 'CONFIRMED':
-        return 'Confirmed';
-      case 'PROCESSING':
-        return 'Processing';
-      case 'SHIPPED':
-        return 'Shipped';
-      case 'DELIVERED':
-        return 'Delivered';
-      default:
-        return step;
-    }
-  }
-
   Widget _buildOverviewCard(Order order) {
+    final palette = context.palette;
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: palette.surface,
         borderRadius: BorderRadius.circular(16),
       ),
       child: Column(
@@ -882,17 +638,17 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
                 children: [
                   Text(
                     order.orderNumber,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 15,
                       fontWeight: FontWeight.w700,
-                      color: AppColors.textPrimary,
+                      color: palette.textPrimary,
                     ),
                   ),
                   IconButton(
-                    icon: const Icon(
+                    icon: Icon(
                       Icons.copy_rounded,
                       size: 16,
-                      color: AppColors.textHint,
+                      color: palette.textHint,
                     ),
                     tooltip: 'Copy Order Number',
                     onPressed: () {
@@ -909,7 +665,7 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
               OrderStatusBadge(status: order.status),
             ],
           ),
-          const Divider(height: 16, color: AppColors.divider),
+          Divider(height: 16, color: palette.divider),
           _buildInfoRow('Placed On', _formatDate(order.createdAt ?? '')),
           const SizedBox(height: 6),
           _buildInfoRow(
@@ -930,10 +686,11 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
   }
 
   Widget _buildItemsCard(Order order) {
+    final palette = context.palette;
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: palette.surface,
         borderRadius: BorderRadius.circular(16),
       ),
       child: Column(
@@ -980,16 +737,16 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
                         if (item.variantLabel != null)
                           Text(
                             item.variantLabel!,
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 11,
-                              color: AppColors.textSecondary,
+                              color: palette.textSecondary,
                             ),
                           ),
                         Text(
                           '${item.quantity} × \$${item.unitPrice.toStringAsFixed(2)}',
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 12,
-                            color: AppColors.textSecondary,
+                            color: palette.textSecondary,
                           ),
                         ),
                       ],
@@ -1015,7 +772,7 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: context.palette.surface,
         borderRadius: BorderRadius.circular(16),
       ),
       child: Column(
@@ -1048,10 +805,11 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
   }
 
   Widget _buildPriceBreakdownCard(Order order) {
+    final palette = context.palette;
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: palette.surface,
         borderRadius: BorderRadius.circular(16),
       ),
       child: Column(
@@ -1072,7 +830,7 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
               valueColor: AppColors.success,
             ),
           ],
-          const Divider(height: 20, color: AppColors.divider),
+          Divider(height: 20, color: palette.divider),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -1082,10 +840,10 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
               ),
               Text(
                 '\$${order.totalAmount.toStringAsFixed(2)}',
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.w800,
-                  color: AppColors.primary,
+                  color: palette.primary,
                 ),
               ),
             ],
@@ -1096,13 +854,14 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
   }
 
   Widget _buildInfoRow(String label, String value, {Color? valueColor}) {
+    final palette = context.palette;
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         Text(
           label,
-          style: const TextStyle(fontSize: 13, color: AppColors.textSecondary),
+          style: TextStyle(fontSize: 13, color: palette.textSecondary),
         ),
         const SizedBox(width: 12),
         Flexible(
@@ -1112,7 +871,7 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
             style: TextStyle(
               fontSize: 13,
               fontWeight: FontWeight.w600,
-              color: valueColor ?? AppColors.textPrimary,
+              color: valueColor ?? palette.textPrimary,
             ),
           ),
         ),
@@ -1121,13 +880,14 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
   }
 
   Widget _placeholder() {
+    final palette = context.palette;
     return Container(
-      color: AppColors.surfaceVariant,
-      child: const Center(
+      color: palette.surfaceVariant,
+      child: Center(
         child: Icon(
           Icons.shopping_bag_outlined,
           size: 24,
-          color: AppColors.textHint,
+          color: palette.textHint,
         ),
       ),
     );
@@ -1199,6 +959,7 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
   }
 
   void _showKhqrDialog(PaymentData payment) {
+    final palette = context.palette;
     Timer? pollTimer;
     var checking = false;
 
@@ -1229,7 +990,7 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      backgroundColor: Colors.white,
+      backgroundColor: palette.surface,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
@@ -1243,26 +1004,26 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
                 width: 40,
                 height: 4,
                 decoration: BoxDecoration(
-                  color: AppColors.divider,
+                  color: palette.divider,
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
               const SizedBox(height: 16),
-              const Text(
+              Text(
                 'Scan to Pay with Bakong / KHQR',
                 style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.w700,
-                  color: AppColors.textPrimary,
+                  color: palette.textPrimary,
                 ),
               ),
               const SizedBox(height: 6),
               Text(
                 'Amount: \$${payment.amount.toStringAsFixed(2)}',
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w800,
-                  color: AppColors.primary,
+                  color: palette.primary,
                 ),
               ),
               const SizedBox(height: 20),
@@ -1298,20 +1059,27 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
                           : const SizedBox(
                               width: 220,
                               height: 220,
-                              child: Center(child: Text('QR not available')),
+                              // Sits on the fixed white QR card, so keep it
+                              // dark on every theme.
+                              child: Center(
+                                child: Text(
+                                  'QR not available',
+                                  style: TextStyle(color: Colors.black54),
+                                ),
+                              ),
                             )),
               ),
               const SizedBox(height: 20),
-              const Text(
+              Text(
                 'Scan with ABA, ACLEDA, Wing, or any Bakong-compatible app',
                 textAlign: TextAlign.center,
-                style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
+                style: TextStyle(fontSize: 12, color: palette.textSecondary),
               ),
               const SizedBox(height: 8),
-              const Text(
+              Text(
                 'Payment status is checked automatically after you scan.',
                 textAlign: TextAlign.center,
-                style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
+                style: TextStyle(fontSize: 12, color: palette.textSecondary),
               ),
               const SizedBox(height: 24),
               GradientButton(

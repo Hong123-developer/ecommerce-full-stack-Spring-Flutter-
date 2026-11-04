@@ -67,20 +67,21 @@ class _OAuth2CallbackScreenState extends ConsumerState<OAuth2CallbackScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return const Scaffold(
-      backgroundColor: AppColors.background,
+    final palette = context.palette;
+    return Scaffold(
+      backgroundColor: palette.background,
       body: Center(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            CircularProgressIndicator(color: AppColors.primary),
-            SizedBox(height: 20),
+            CircularProgressIndicator(color: palette.primary),
+            const SizedBox(height: 20),
             Text(
               'Signing in with Google...',
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w600,
-                color: AppColors.textPrimary,
+                color: palette.textPrimary,
               ),
             ),
           ],

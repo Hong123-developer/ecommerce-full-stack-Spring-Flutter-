@@ -24,18 +24,13 @@ class _CartScreenState extends ConsumerState<CartScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final palette = context.palette;
     final cart = ref.watch(cartProvider);
     final language = ref.watch(appLanguageProvider);
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: palette.background,
       appBar: AppBar(
-        leading: Navigator.of(context).canPop()
-            ? IconButton(
-                icon: const Icon(Icons.arrow_back_ios_new_rounded),
-                onPressed: () => context.pop(),
-              )
-            : null,
         title: Text('${appText(language, 'cart')} (${cart.totalQuantity})'),
         actions: [
           if (cart.items.isNotEmpty)
@@ -48,7 +43,7 @@ class _CartScreenState extends ConsumerState<CartScreen> {
       ),
       body: RefreshIndicator(
         onRefresh: () => ref.read(cartProvider.notifier).fetchCart(),
-        color: AppColors.primary,
+        color: palette.primary,
         child: cart.items.isEmpty
             ? _buildEmptyState()
             : Column(
@@ -87,10 +82,11 @@ class _CartScreenState extends ConsumerState<CartScreen> {
   }
 
   Widget _buildCartItemCard(CartItem item) {
+    final palette = context.palette;
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: palette.surface,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
@@ -131,10 +127,10 @@ class _CartScreenState extends ConsumerState<CartScreen> {
                     item.productName,
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w600,
-                      color: AppColors.textPrimary,
+                      color: palette.textPrimary,
                     ),
                   ),
                 ),
@@ -143,14 +139,14 @@ class _CartScreenState extends ConsumerState<CartScreen> {
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                     decoration: BoxDecoration(
-                      color: AppColors.surfaceVariant,
+                      color: palette.surfaceVariant,
                       borderRadius: BorderRadius.circular(6),
                     ),
                     child: Text(
                       item.variantLabel!,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 11,
-                        color: AppColors.textSecondary,
+                        color: palette.textSecondary,
                         fontWeight: FontWeight.w500,
                       ),
                     ),
@@ -164,17 +160,17 @@ class _CartScreenState extends ConsumerState<CartScreen> {
                   children: [
                     Text(
                       '\$${item.unitPrice.toStringAsFixed(2)}',
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w700,
-                        color: AppColors.primary,
+                        color: palette.primary,
                       ),
                     ),
 
                     // Stepper
                     Container(
                       decoration: BoxDecoration(
-                        color: AppColors.surfaceVariant,
+                        color: palette.surfaceVariant,
                         borderRadius: BorderRadius.circular(10),
                       ),
                       child: Row(
@@ -184,7 +180,7 @@ class _CartScreenState extends ConsumerState<CartScreen> {
                             icon: item.quantity > 1
                                 ? Icons.remove_rounded
                                 : Icons.delete_outline_rounded,
-                            color: item.quantity > 1 ? AppColors.textPrimary : AppColors.error,
+                            color: item.quantity > 1 ? palette.textPrimary : AppColors.error,
                             onTap: () {
                               if (item.quantity > 1) {
                                 ref.read(cartProvider.notifier).updateQuantity(item.id, item.quantity - 1);
@@ -197,16 +193,16 @@ class _CartScreenState extends ConsumerState<CartScreen> {
                             padding: const EdgeInsets.symmetric(horizontal: 10),
                             child: Text(
                               '${item.quantity}',
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontSize: 14,
                                 fontWeight: FontWeight.w700,
-                                color: AppColors.textPrimary,
+                                color: palette.textPrimary,
                               ),
                             ),
                           ),
                           _buildStepperButton(
                             icon: Icons.add_rounded,
-                            color: AppColors.textPrimary,
+                            color: palette.textPrimary,
                             onTap: () {
                               ref.read(cartProvider.notifier).updateQuantity(item.id, item.quantity + 1);
                             },
@@ -240,10 +236,11 @@ class _CartScreenState extends ConsumerState<CartScreen> {
   }
 
   Widget _buildCheckoutFooter(Cart cart) {
+    final palette = context.palette;
     return Container(
       padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: palette.surface,
         borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
         boxShadow: [
           BoxShadow(
@@ -261,19 +258,19 @@ class _CartScreenState extends ConsumerState<CartScreen> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Text(
+                Text(
                   'Subtotal',
                   style: TextStyle(
                     fontSize: 15,
-                    color: AppColors.textSecondary,
+                    color: palette.textSecondary,
                   ),
                 ),
                 Text(
                   '\$${cart.subtotal.toStringAsFixed(2)}',
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.w800,
-                    color: AppColors.textPrimary,
+                    color: palette.textPrimary,
                   ),
                 ),
               ],
@@ -282,18 +279,18 @@ class _CartScreenState extends ConsumerState<CartScreen> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Text(
+                Text(
                   'Shipping',
                   style: TextStyle(
                     fontSize: 13,
-                    color: AppColors.textSecondary,
+                    color: palette.textSecondary,
                   ),
                 ),
                 Text(
                   'Calculated at checkout',
                   style: TextStyle(
                     fontSize: 13,
-                    color: AppColors.primary.withValues(alpha: 0.8),
+                    color: palette.primary.withValues(alpha: 0.8),
                     fontWeight: FontWeight.w500,
                   ),
                 ),
@@ -311,10 +308,11 @@ class _CartScreenState extends ConsumerState<CartScreen> {
   }
 
   Widget _imagePlaceholder() {
+    final palette = context.palette;
     return Container(
-      color: AppColors.surfaceVariant,
-      child: const Center(
-        child: Icon(Icons.image_rounded, size: 28, color: AppColors.textHint),
+      color: palette.surfaceVariant,
+      child: Center(
+        child: Icon(Icons.image_rounded, size: 28, color: palette.textHint),
       ),
     );
   }

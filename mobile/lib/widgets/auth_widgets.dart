@@ -1,7 +1,6 @@
 import 'dart:math' as math;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../config/api_config.dart';
@@ -111,17 +110,10 @@ class AuthStepScaffold extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.surface,
+      backgroundColor: context.palette.surface,
       appBar: AppBar(
-        centerTitle: true,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_rounded),
-          onPressed: () => context.canPop() ? context.pop() : context.go(fallbackRoute),
-        ),
-        title: Text(
-          title,
-          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
-        ),
+        leading: AppBackButton(fallbackRoute: fallbackRoute),
+        title: Text(title),
       ),
       body: SafeArea(
         child: Column(
@@ -158,7 +150,7 @@ class AuthStepMessage extends StatelessWidget {
     return Text(
       text,
       textAlign: TextAlign.center,
-      style: const TextStyle(color: AppColors.textSecondary, fontSize: 13, height: 1.5),
+      style: TextStyle(color: context.palette.textSecondary, fontSize: 13, height: 1.5),
     );
   }
 }
@@ -178,6 +170,7 @@ class AuthIllustration extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = context.palette;
     return Center(
       child: SizedBox(
         width: 240,
@@ -190,13 +183,13 @@ class AuthIllustration extends StatelessWidget {
               width: 168,
               height: 168,
               decoration: BoxDecoration(
-                color: AppColors.primary.withValues(alpha: 0.08),
+                color: palette.primary.withValues(alpha: 0.08),
                 shape: BoxShape.circle,
               ),
             ),
             // Decorative shapes
-            Positioned(left: 28, top: 36, child: _dot(10, AppColors.primaryLight)),
-            Positioned(right: 26, bottom: 30, child: _dot(14, AppColors.accent.withValues(alpha: 0.6))),
+            Positioned(left: 28, top: 36, child: _dot(10, palette.primaryLight)),
+            Positioned(right: 26, bottom: 30, child: _dot(14, palette.accent.withValues(alpha: 0.6))),
             Positioned(
               left: 40,
               bottom: 22,
@@ -204,7 +197,7 @@ class AuthIllustration extends StatelessWidget {
                 width: 18,
                 height: 18,
                 decoration: BoxDecoration(
-                  color: AppColors.primary.withValues(alpha: 0.2),
+                  color: palette.primary.withValues(alpha: 0.2),
                   borderRadius: BorderRadius.circular(5),
                 ),
               ),
@@ -215,12 +208,12 @@ class AuthIllustration extends StatelessWidget {
               height: 140,
               padding: const EdgeInsets.all(14),
               decoration: BoxDecoration(
-                color: AppColors.surface,
+                color: palette.surface,
                 borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: AppColors.divider, width: 1.2),
+                border: Border.all(color: palette.divider, width: 1.2),
                 boxShadow: [
                   BoxShadow(
-                    color: AppColors.primary.withValues(alpha: 0.12),
+                    color: palette.primary.withValues(alpha: 0.12),
                     blurRadius: 18,
                     offset: const Offset(0, 8),
                   ),
@@ -231,18 +224,18 @@ class AuthIllustration extends StatelessWidget {
                   Container(
                     width: 40,
                     height: 40,
-                    decoration: const BoxDecoration(
-                      gradient: AppColors.primaryGradient,
+                    decoration: BoxDecoration(
+                      gradient: palette.primaryGradient,
                       shape: BoxShape.circle,
                     ),
-                    child: Icon(icon, size: 22, color: Colors.white),
+                    child: Icon(icon, size: 22, color: palette.onPrimary),
                   ),
                   const SizedBox(height: 12),
-                  _bar(60, 6, AppColors.surfaceVariant),
+                  _bar(60, 6, palette.surfaceVariant),
                   const SizedBox(height: 6),
-                  _bar(44, 6, AppColors.surfaceVariant),
+                  _bar(44, 6, palette.surfaceVariant),
                   const Spacer(),
-                  _bar(64, 14, AppColors.primary),
+                  _bar(64, 14, palette.primary),
                 ],
               ),
             ),
@@ -256,7 +249,8 @@ class AuthIllustration extends StatelessWidget {
                 decoration: BoxDecoration(
                   color: AppColors.success,
                   shape: BoxShape.circle,
-                  border: Border.all(color: Colors.white, width: 3),
+                  // Ring in the page color so the badge reads as cut out
+                  border: Border.all(color: palette.surface, width: 3),
                 ),
                 child: Icon(badgeIcon, size: 16, color: Colors.white),
               ),
@@ -316,6 +310,7 @@ class AuthTextField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = context.palette;
     return TextFormField(
       controller: controller,
       keyboardType: keyboardType,
@@ -323,12 +318,12 @@ class AuthTextField extends StatelessWidget {
       autofillHints: autofillHints,
       obscureText: obscureText,
       validator: validator,
-      style: const TextStyle(fontSize: 14, color: AppColors.textPrimary),
+      style: TextStyle(fontSize: 14, color: palette.textPrimary),
       decoration: InputDecoration(
         hintText: hint,
         filled: true,
-        fillColor: AppColors.surface,
-        prefixIcon: Icon(icon, size: 20, color: AppColors.textHint),
+        fillColor: palette.surface,
+        prefixIcon: Icon(icon, size: 20, color: palette.textHint),
         // Only password fields get the show/hide toggle
         suffixIcon: onToggleObscure == null
             ? null
@@ -336,13 +331,13 @@ class AuthTextField extends StatelessWidget {
                 icon: Icon(
                   obscureText ? Icons.visibility_off_outlined : Icons.visibility_outlined,
                   size: 20,
-                  color: AppColors.textHint,
+                  color: palette.textHint,
                 ),
                 onPressed: onToggleObscure,
               ),
-        border: _border(AppColors.divider),
-        enabledBorder: _border(AppColors.divider),
-        focusedBorder: _border(AppColors.primary, width: 1.5),
+        border: _border(palette.divider),
+        enabledBorder: _border(palette.divider),
+        focusedBorder: _border(palette.primary, width: 1.5),
         errorBorder: _border(AppColors.error),
         focusedErrorBorder: _border(AppColors.error, width: 1.5),
       ),
@@ -367,17 +362,18 @@ class AuthDivider extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = context.palette;
     return Row(
       children: [
-        const Expanded(child: Divider(color: AppColors.divider)),
+        Expanded(child: Divider(color: palette.divider)),
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 12),
           child: Text(
             label,
-            style: const TextStyle(fontSize: 12, color: AppColors.textHint),
+            style: TextStyle(fontSize: 12, color: palette.textHint),
           ),
         ),
-        const Expanded(child: Divider(color: AppColors.divider)),
+        Expanded(child: Divider(color: palette.divider)),
       ],
     );
   }
@@ -400,14 +396,15 @@ class SocialAuthButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = context.palette;
     return SizedBox(
       height: 48,
       child: OutlinedButton(
         onPressed: onPressed,
         style: OutlinedButton.styleFrom(
-          backgroundColor: AppColors.surface,
-          foregroundColor: AppColors.textPrimary,
-          side: const BorderSide(color: AppColors.divider, width: 1.2),
+          backgroundColor: palette.surface,
+          foregroundColor: palette.textPrimary,
+          side: BorderSide(color: palette.divider, width: 1.2),
           padding: const EdgeInsets.symmetric(horizontal: 12),
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         ),
@@ -420,10 +417,10 @@ class SocialAuthButton extends StatelessWidget {
               child: Text(
                 label,
                 overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w600,
-                  color: AppColors.textPrimary,
+                  color: palette.textPrimary,
                 ),
               ),
             ),
@@ -512,6 +509,8 @@ Future<void> showAuthSuccessDialog(
     context: context,
     barrierDismissible: false,
     builder: (dialogContext) {
+      final palette = dialogContext.palette;
+
       void finish() {
         Navigator.of(dialogContext).pop();
         onAction();
@@ -520,7 +519,7 @@ Future<void> showAuthSuccessDialog(
       return PopScope(
         canPop: false,
         child: Dialog(
-          backgroundColor: AppColors.surface,
+          backgroundColor: palette.surface,
           insetPadding: const EdgeInsets.symmetric(horizontal: 40),
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
           child: Stack(
@@ -534,11 +533,11 @@ Future<void> showAuthSuccessDialog(
                       width: 72,
                       height: 72,
                       decoration: BoxDecoration(
-                        gradient: AppColors.primaryGradient,
+                        gradient: palette.primaryGradient,
                         shape: BoxShape.circle,
                         boxShadow: [
                           BoxShadow(
-                            color: AppColors.primary.withValues(alpha: 0.25),
+                            color: palette.primary.withValues(alpha: 0.25),
                             blurRadius: 16,
                             offset: const Offset(0, 6),
                           ),
@@ -550,17 +549,17 @@ Future<void> showAuthSuccessDialog(
                     Text(
                       title,
                       textAlign: TextAlign.center,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.w700,
-                        color: AppColors.textPrimary,
+                        color: palette.textPrimary,
                       ),
                     ),
                     const SizedBox(height: 8),
                     Text(
                       message,
                       textAlign: TextAlign.center,
-                      style: const TextStyle(fontSize: 13, color: AppColors.textSecondary),
+                      style: TextStyle(fontSize: 13, color: palette.textSecondary),
                     ),
                     const SizedBox(height: 24),
                     GradientButton(label: actionLabel, onPressed: finish),
@@ -571,7 +570,7 @@ Future<void> showAuthSuccessDialog(
                 top: 4,
                 right: 4,
                 child: IconButton(
-                  icon: const Icon(Icons.close_rounded, size: 20, color: AppColors.textSecondary),
+                  icon: Icon(Icons.close_rounded, size: 20, color: palette.textSecondary),
                   onPressed: finish,
                 ),
               ),

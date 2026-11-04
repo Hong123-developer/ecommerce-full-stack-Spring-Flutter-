@@ -10,6 +10,7 @@ import com.ecomerceshopeonline.ecomercewepapp.entity.enums.NotificationType;
 import com.ecomerceshopeonline.ecomercewepapp.entity.enums.OrderStatus;
 import com.ecomerceshopeonline.ecomercewepapp.entity.enums.PaymentMethod;
 import com.ecomerceshopeonline.ecomercewepapp.entity.enums.RoleName;
+import com.ecomerceshopeonline.ecomercewepapp.entity.enums.ShipmentStage;
 import com.ecomerceshopeonline.ecomercewepapp.exception.ResourceNotFoundException;
 import com.ecomerceshopeonline.ecomercewepapp.repository.NotificationRepository;
 import com.ecomerceshopeonline.ecomercewepapp.repository.UserRepository;
@@ -111,6 +112,36 @@ public class NotificationServiceImpl implements NotificationService {
             }
             default -> {
                 // Back to PENDING (or anything new): nothing a shopper needs to hear about.
+                return;
+            }
+        }
+        toCustomer(order, NotificationType.ORDER_UPDATED, title, message);
+    }
+
+    @Override
+    @Transactional
+    public void shipmentStageChanged(Order order) {
+        ShipmentStage stage = order.getShipmentStage();
+        if (stage == null) {
+            return;
+        }
+        String number = order.getOrderNumber();
+        String title;
+        String message;
+        switch (stage) {
+            case PICKED_UP -> {
+                title = "Picked up by courier";
+                message = "Order #%s has been picked up by the courier.".formatted(number);
+            }
+            case IN_TRANSIT -> {
+                title = "Order in transit";
+                message = "Order #%s is in transit.".formatted(number);
+            }
+            case OUT_FOR_DELIVERY -> {
+                title = "Out for delivery";
+                message = "Order #%s is out for delivery and will arrive soon.".formatted(number);
+            }
+            default -> {
                 return;
             }
         }

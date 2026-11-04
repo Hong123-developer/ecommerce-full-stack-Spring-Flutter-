@@ -25,14 +25,13 @@ class ECommerceApp extends ConsumerWidget {
     final router = ref.watch(routerProvider);
     final themeStyle = ref.watch(themeStyleProvider);
     final isDark = themeStyle.isDark;
+    final palette = AppPalette.fromStyle(themeStyle);
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: SystemUiOverlayStyle(
         statusBarColor: Colors.transparent,
         statusBarIconBrightness: isDark ? Brightness.light : Brightness.dark,
-        systemNavigationBarColor: isDark
-            ? const Color(0xFF0F172A)
-            : AppColors.surface,
+        systemNavigationBarColor: palette.surface,
         systemNavigationBarIconBrightness: isDark
             ? Brightness.light
             : Brightness.dark,

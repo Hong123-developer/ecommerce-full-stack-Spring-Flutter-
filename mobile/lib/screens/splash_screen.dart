@@ -23,7 +23,7 @@ class SplashScreen extends ConsumerWidget {
 
     return Scaffold(
       body: Container(
-        decoration: const BoxDecoration(gradient: AppColors.primaryGradient),
+        decoration: BoxDecoration(gradient: context.palette.primaryGradient),
         child: Center(
           child: Column(
             mainAxisSize: MainAxisSize.min,

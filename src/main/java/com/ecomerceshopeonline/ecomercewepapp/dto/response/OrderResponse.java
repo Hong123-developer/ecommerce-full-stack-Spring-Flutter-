@@ -4,6 +4,7 @@ import com.ecomerceshopeonline.ecomercewepapp.entity.enums.DeliveryType;
 import com.ecomerceshopeonline.ecomercewepapp.entity.enums.OrderStatus;
 import com.ecomerceshopeonline.ecomercewepapp.entity.enums.PaymentMethod;
 import com.ecomerceshopeonline.ecomercewepapp.entity.enums.PaymentStatus;
+import com.ecomerceshopeonline.ecomercewepapp.entity.enums.ShipmentStage;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -38,6 +39,14 @@ public record OrderResponse(
         /** Map pin of the delivery address at checkout; null for pickup. */
         Double latitude,
         Double longitude,
+        /** The courier's parcel reference; null until an admin enters the shipment details. */
+        String trackingNumber,
+        String carrierName,
+        String courierName,
+        String courierPhone,
+        LocalDateTime estimatedDeliveryAt,
+        /** The courier's step; only ever set while the order is SHIPPED. */
+        ShipmentStage shipmentStage,
         List<OrderItemResponse> items,
         PaymentMethod paymentMethod,
         PaymentStatus paymentStatus,

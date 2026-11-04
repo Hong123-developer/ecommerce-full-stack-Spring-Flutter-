@@ -14,16 +14,11 @@ class WishlistScreen extends ConsumerWidget {
     final wishlistAsync = ref.watch(wishlistPageProvider);
     final wishlistMap = ref.watch(wishlistProvider);
     final language = ref.watch(appLanguageProvider);
+    final palette = context.palette;
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: palette.background,
       appBar: AppBar(
-        leading: Navigator.of(context).canPop()
-            ? IconButton(
-                icon: const Icon(Icons.arrow_back_ios_new_rounded),
-                onPressed: () => context.pop(),
-              )
-            : null,
         title: Text(appText(language, 'wishlist')),
         actions: [
           IconButton(
@@ -68,7 +63,7 @@ class WishlistScreen extends ConsumerWidget {
                       style: TextStyle(
                         fontSize: 20,
                         fontWeight: FontWeight.w700,
-                        color: AppColors.textPrimary,
+                        color: palette.textPrimary,
                       ),
                       textAlign: TextAlign.center,
                     ),
@@ -77,7 +72,7 @@ class WishlistScreen extends ConsumerWidget {
                       appText(language, 'wishlistEmptyDescription'),
                       style: TextStyle(
                         fontSize: 14,
-                        color: AppColors.textSecondary,
+                        color: palette.textSecondary,
                         height: 1.4,
                       ),
                       textAlign: TextAlign.center,
@@ -91,8 +86,8 @@ class WishlistScreen extends ConsumerWidget {
                         icon: const Icon(Icons.shopping_bag_outlined, size: 18),
                         label: Text(appText(language, 'exploreShop')),
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.primary,
-                          foregroundColor: Colors.white,
+                          backgroundColor: palette.primary,
+                          foregroundColor: palette.onPrimary,
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(14),
                           ),
@@ -106,7 +101,7 @@ class WishlistScreen extends ConsumerWidget {
           }
 
           return RefreshIndicator(
-            color: AppColors.primary,
+            color: palette.primary,
             onRefresh: () async => ref.refresh(wishlistPageProvider),
             child: GridView.builder(
               padding: const EdgeInsets.all(16),
@@ -137,8 +132,8 @@ class WishlistScreen extends ConsumerWidget {
             ),
           );
         },
-        loading: () => const Center(
-          child: CircularProgressIndicator(color: AppColors.primary),
+        loading: () => Center(
+          child: CircularProgressIndicator(color: palette.primary),
         ),
         error: (err, _) => Center(
           child: EmptyState(

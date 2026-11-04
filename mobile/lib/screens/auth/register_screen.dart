@@ -74,8 +74,9 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   @override
   Widget build(BuildContext context) {
     final language = ref.watch(appLanguageProvider);
+    final palette = context.palette;
     return Scaffold(
-      backgroundColor: AppColors.surface,
+      backgroundColor: palette.surface,
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
@@ -92,7 +93,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                     appText(language, 'register'),
                     style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                           fontWeight: FontWeight.w700,
-                          color: AppColors.textPrimary,
+                          color: palette.textPrimary,
                         ),
                   ),
                   const SizedBox(height: 20),
@@ -184,16 +185,16 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      const Text(
+                      Text(
                         'Already have an account? ',
-                        style: TextStyle(color: AppColors.textSecondary, fontSize: 13),
+                        style: TextStyle(color: palette.textSecondary, fontSize: 13),
                       ),
                       GestureDetector(
                         onTap: _goToLogin,
-                        child: const Text(
+                        child: Text(
                           'Log in',
                           style: TextStyle(
-                            color: AppColors.primary,
+                            color: palette.primary,
                             fontWeight: FontWeight.w700,
                             fontSize: 13,
                           ),

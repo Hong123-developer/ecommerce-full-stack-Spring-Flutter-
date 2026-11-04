@@ -212,6 +212,7 @@ class _VerifyEmailScreenState extends ConsumerState<VerifyEmailScreen> {
   @override
   Widget build(BuildContext context) {
     final emailLabel = _email.isNotEmpty ? _email : 'your email';
+    final palette = context.palette;
 
     return AuthStepScaffold(
       title: 'Verify OTP',
@@ -228,8 +229,8 @@ class _VerifyEmailScreenState extends ConsumerState<VerifyEmailScreen> {
           const SizedBox(height: 24),
           Text.rich(
             TextSpan(
-              style: const TextStyle(
-                color: AppColors.textSecondary,
+              style: TextStyle(
+                color: palette.textSecondary,
                 fontSize: 13,
                 height: 1.5,
               ),
@@ -242,8 +243,8 @@ class _VerifyEmailScreenState extends ConsumerState<VerifyEmailScreen> {
                 ),
                 TextSpan(
                   text: emailLabel,
-                  style: const TextStyle(
-                    color: AppColors.textPrimary,
+                  style: TextStyle(
+                    color: palette.textPrimary,
                     fontWeight: FontWeight.w700,
                   ),
                 ),
@@ -267,15 +268,15 @@ class _VerifyEmailScreenState extends ConsumerState<VerifyEmailScreen> {
             alignment: WrapAlignment.center,
             crossAxisAlignment: WrapCrossAlignment.center,
             children: [
-              const Text(
+              Text(
                 "Didn't receive any code? ",
-                style: TextStyle(color: AppColors.textSecondary, fontSize: 13),
+                style: TextStyle(color: palette.textSecondary, fontSize: 13),
               ),
               if (_resendCountdown > 0)
                 Text(
                   'Resend in ${_resendCountdown}s',
-                  style: const TextStyle(
-                    color: AppColors.textHint,
+                  style: TextStyle(
+                    color: palette.textHint,
                     fontWeight: FontWeight.w600,
                     fontSize: 13,
                   ),
@@ -285,8 +286,8 @@ class _VerifyEmailScreenState extends ConsumerState<VerifyEmailScreen> {
                   onTap: _isResending ? null : _resendCode,
                   child: Text(
                     _isResending ? 'Sending...' : 'Resend',
-                    style: const TextStyle(
-                      color: AppColors.primary,
+                    style: TextStyle(
+                      color: palette.primary,
                       fontWeight: FontWeight.w700,
                       fontSize: 13,
                     ),
@@ -307,6 +308,7 @@ class _VerifyEmailScreenState extends ConsumerState<VerifyEmailScreen> {
 
   Widget _buildCodeInput() {
     const gap = 8.0;
+    final palette = context.palette;
     return LayoutBuilder(
       builder: (context, constraints) {
         // Shrinks to fit narrow phones (6 x 46 + gaps needs 316px)
@@ -329,24 +331,24 @@ class _VerifyEmailScreenState extends ConsumerState<VerifyEmailScreen> {
                     margin: EdgeInsets.only(right: i < _codeLength - 1 ? gap : 0),
                     alignment: Alignment.center,
                     decoration: BoxDecoration(
-                      color: AppColors.surface,
+                      color: palette.surface,
                       borderRadius: BorderRadius.circular(10),
                       border: Border.all(
-                        color: isActive || digit.isNotEmpty ? AppColors.primary : AppColors.divider,
+                        color: isActive || digit.isNotEmpty ? palette.primary : palette.divider,
                         width: isActive ? 1.5 : 1.2,
                       ),
                     ),
                     child: digit.isNotEmpty
                         ? Text(
                             digit,
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 20,
                               fontWeight: FontWeight.w700,
-                              color: AppColors.textPrimary,
+                              color: palette.textPrimary,
                             ),
                           )
                         : (isActive
-                            ? Container(width: 2, height: 22, color: AppColors.primary)
+                            ? Container(width: 2, height: 22, color: palette.primary)
                             : null),
                   );
                 }),

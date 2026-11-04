@@ -106,8 +106,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     final language = ref.watch(appLanguageProvider);
+    final palette = context.palette;
     return Scaffold(
-      backgroundColor: AppColors.surface,
+      backgroundColor: palette.surface,
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
@@ -127,7 +128,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     appText(language, 'login'),
                     style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                           fontWeight: FontWeight.w700,
-                          color: AppColors.textPrimary,
+                          color: palette.textPrimary,
                         ),
                   ),
                   const SizedBox(height: 20),
@@ -163,8 +164,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         height: 24,
                         child: Checkbox(
                           value: _rememberMe,
-                          activeColor: AppColors.primary,
-                          side: const BorderSide(color: AppColors.textHint, width: 1.2),
+                          activeColor: palette.primary,
+                          side: BorderSide(color: palette.textHint, width: 1.2),
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
                           onChanged: (v) => setState(() => _rememberMe = v ?? false),
                         ),
@@ -173,11 +174,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       Flexible(
                         child: GestureDetector(
                           onTap: () => setState(() => _rememberMe = !_rememberMe),
-                          child: const Text(
+                          child: Text(
                             'Remember me',
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
-                            style: TextStyle(fontSize: 13, color: AppColors.textSecondary),
+                            style: TextStyle(fontSize: 13, color: palette.textSecondary),
                           ),
                         ),
                       ),
@@ -191,11 +192,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                           minimumSize: const Size(0, 36),
                           tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                         ),
-                        child: const Text(
+                        child: Text(
                           'Forgot password?',
                           style: TextStyle(
                             fontSize: 13,
-                            color: AppColors.primary,
+                            color: palette.primary,
                             fontWeight: FontWeight.w600,
                           ),
                         ),
@@ -239,16 +240,16 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      const Text(
+                      Text(
                         "Don't have an account? ",
-                        style: TextStyle(color: AppColors.textSecondary, fontSize: 13),
+                        style: TextStyle(color: palette.textSecondary, fontSize: 13),
                       ),
                       GestureDetector(
                         onTap: () => context.push('/register'),
-                        child: const Text(
+                        child: Text(
                           'Sign up',
                           style: TextStyle(
-                            color: AppColors.primary,
+                            color: palette.primary,
                             fontWeight: FontWeight.w700,
                             fontSize: 13,
                           ),
@@ -260,9 +261,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   Center(
                     child: TextButton(
                       onPressed: () => context.go('/home'),
-                      child: const Text(
+                      child: Text(
                         'Continue as guest',
-                        style: TextStyle(fontSize: 13, color: AppColors.textHint),
+                        style: TextStyle(fontSize: 13, color: palette.textHint),
                       ),
                     ),
                   ),

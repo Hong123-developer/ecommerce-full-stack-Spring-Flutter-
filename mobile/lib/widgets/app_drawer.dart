@@ -20,7 +20,7 @@ class AppDrawer extends ConsumerWidget {
     final unreadAsync = ref.watch(unreadCountProvider);
     final themeStyle = ref.watch(themeStyleProvider);
     final language = ref.watch(appLanguageProvider);
-    final isDark = themeStyle.isDark;
+    final palette = context.palette;
     String text(String key) => drawerText(language, key);
 
     return Drawer(
@@ -59,8 +59,8 @@ class AppDrawer extends ConsumerWidget {
                 _DrawerMenuItem(
                   icon: Icons.home_rounded,
                   label: text('home'),
-                  iconBgColor: AppColors.primary.withValues(alpha: 0.08),
-                  iconColor: AppColors.primary,
+                  iconBgColor: palette.primary.withValues(alpha: 0.08),
+                  iconColor: palette.primary,
                   onTap: () {
                     Navigator.of(context).pop();
                     context.go('/home');
@@ -79,12 +79,12 @@ class AppDrawer extends ConsumerWidget {
                 _DrawerMenuItem(
                   icon: Icons.shopping_cart_rounded,
                   label: text('cart'),
-                  iconBgColor: AppColors.accent.withValues(alpha: 0.10),
-                  iconColor: AppColors.accent,
+                  iconBgColor: palette.accent.withValues(alpha: 0.10),
+                  iconColor: palette.accent,
                   badgeCount: cart.totalQuantity,
                   onTap: () {
                     Navigator.of(context).pop();
-                    context.push('/cart');
+                    context.go('/cart');
                   },
                 ),
                 _DrawerMenuItem(
@@ -117,8 +117,8 @@ class AppDrawer extends ConsumerWidget {
                 _DrawerMenuItem(
                   icon: Icons.person_rounded,
                   label: text('profile'),
-                  iconBgColor: AppColors.primary.withValues(alpha: 0.08),
-                  iconColor: AppColors.primary,
+                  iconBgColor: palette.primary.withValues(alpha: 0.08),
+                  iconColor: palette.primary,
                   onTap: () {
                     Navigator.of(context).pop();
                     context.go('/profile');
@@ -172,19 +172,15 @@ class AppDrawer extends ConsumerWidget {
                 ),
                 const SizedBox(height: 10),
 
-                _DrawerDivider(isDark: isDark),
+                const _DrawerDivider(),
 
                 // ── Other section ──
-                _DrawerSectionTitle(
-                  title: text('other'),
-                  textColor: isDark ? Colors.white70 : null,
-                ),
+                _DrawerSectionTitle(title: text('other')),
                 const SizedBox(height: 4),
                 _DrawerMenuItem(
                   icon: Icons.language_rounded,
                   label: text('language'),
                   subtitle: language == AppLanguage.khmer ? text('khmer') : text('english'),
-                  isDark: isDark,
                   iconBgColor: AppColors.info.withValues(alpha: 0.10),
                   iconColor: AppColors.info,
                   onTap: () {
@@ -215,8 +211,8 @@ class AppDrawer extends ConsumerWidget {
                   icon: Icons.info_outline_rounded,
                   label: text('about'),
                   subtitle: 'Version 1.0.0',
-                  iconBgColor: AppColors.primaryLight.withValues(alpha: 0.15),
-                  iconColor: AppColors.primaryLight,
+                  iconBgColor: palette.primaryLight.withValues(alpha: 0.15),
+                  iconColor: palette.primaryLight,
                   onTap: () {
                     Navigator.of(context).pop();
                     _showAboutDialog(context);
@@ -230,7 +226,6 @@ class AppDrawer extends ConsumerWidget {
           // ─── Footer ───
           _DrawerFooter(
             isAuth: isAuth,
-            isDark: isDark,
             loginLabel: text('login'),
             logoutLabel: text('logout'),
             primaryColor: themeStyle.primary,
@@ -265,9 +260,9 @@ class AppDrawer extends ConsumerWidget {
                   actions: [
                     TextButton(
                       onPressed: () => Navigator.pop(ctx, false),
-                      child: const Text(
+                      child: Text(
                         'Cancel',
-                        style: TextStyle(color: AppColors.textSecondary),
+                        style: TextStyle(color: ctx.palette.textSecondary),
                       ),
                     ),
                     ElevatedButton(
@@ -305,51 +300,49 @@ class AppDrawer extends ConsumerWidget {
   ) {
     showModalBottomSheet<void>(
       context: context,
-      backgroundColor: currentStyle.isDark
-          ? const Color(0xFF1E293B)
-          : Colors.white,
+      backgroundColor: context.palette.surface,
       showDragHandle: true,
+      isScrollControlled: true,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
       ),
-      builder: (sheetContext) => SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(20, 4, 20, 20),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Theme Style & Color',
-                style: GoogleFonts.inter(
-                  fontSize: 20,
-                  fontWeight: FontWeight.w800,
-                  color: currentStyle.isDark
-                      ? Colors.white
-                      : AppColors.textPrimary,
+      builder: (sheetContext) {
+        final palette = sheetContext.palette;
+        return SafeArea(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.fromLTRB(20, 4, 20, 20),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Theme Style & Color',
+                  style: GoogleFonts.inter(
+                    fontSize: 20,
+                    fontWeight: FontWeight.w800,
+                    color: palette.textPrimary,
+                  ),
                 ),
-              ),
-              const SizedBox(height: 6),
-              Text(
-                'Choose a style for the whole app.',
-                style: GoogleFonts.inter(
-                  fontSize: 13,
-                  color: currentStyle.isDark
-                      ? Colors.white70
-                      : AppColors.textSecondary,
+                const SizedBox(height: 6),
+                Text(
+                  'Choose a style for the whole app.',
+                  style: GoogleFonts.inter(
+                    fontSize: 13,
+                    color: palette.textSecondary,
+                  ),
                 ),
-              ),
-              const SizedBox(height: 16),
-              _ThemeStyleSelector(
-                currentStyle: currentStyle,
-                onSelect: (style) {
-                  ref.read(themeStyleProvider.notifier).setTheme(style);
-                  Navigator.of(sheetContext).pop();
-                },
-              ),
-            ],
+                const SizedBox(height: 18),
+                _ThemeStyleSelector(
+                  currentStyle: currentStyle,
+                  onSelect: (style) {
+                    ref.read(themeStyleProvider.notifier).setTheme(style);
+                    Navigator.of(sheetContext).pop();
+                  },
+                ),
+              ],
+            ),
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 
@@ -361,7 +354,7 @@ class AppDrawer extends ConsumerWidget {
     showModalBottomSheet<void>(
       context: context,
       showDragHandle: true,
-      backgroundColor: Colors.white,
+      backgroundColor: context.palette.surface,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
       ),
@@ -377,7 +370,7 @@ class AppDrawer extends ConsumerWidget {
                 style: GoogleFonts.inter(
                   fontSize: 20,
                   fontWeight: FontWeight.w800,
-                  color: AppColors.textPrimary,
+                  color: sheetContext.palette.textPrimary,
                 ),
               ),
               const SizedBox(height: 14),
@@ -422,7 +415,7 @@ class AppDrawer extends ConsumerWidget {
             Text('$feature is coming soon!'),
           ],
         ),
-        backgroundColor: AppColors.primary,
+        backgroundColor: context.palette.primary,
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         margin: const EdgeInsets.all(16),
@@ -434,64 +427,67 @@ class AppDrawer extends ConsumerWidget {
   void _showAboutDialog(BuildContext context) {
     showDialog(
       context: context,
-      builder: (ctx) => Dialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-        child: Padding(
-          padding: const EdgeInsets.all(28),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  gradient: AppColors.primaryGradient,
-                  borderRadius: BorderRadius.circular(20),
+      builder: (ctx) {
+        final palette = ctx.palette;
+        return Dialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+          child: Padding(
+            padding: const EdgeInsets.all(28),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    gradient: palette.primaryGradient,
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: const Icon(
+                    Icons.shopping_bag_rounded,
+                    color: Colors.white,
+                    size: 40,
+                  ),
                 ),
-                child: const Icon(
-                  Icons.shopping_bag_rounded,
-                  color: Colors.white,
-                  size: 40,
+                const SizedBox(height: 20),
+                Text(
+                  'ShopOnline',
+                  style: GoogleFonts.inter(
+                    fontSize: 22,
+                    fontWeight: FontWeight.w800,
+                    color: palette.textPrimary,
+                  ),
                 ),
-              ),
-              const SizedBox(height: 20),
-              Text(
-                'ShopOnline',
-                style: GoogleFonts.inter(
-                  fontSize: 22,
-                  fontWeight: FontWeight.w800,
-                  color: AppColors.textPrimary,
+                const SizedBox(height: 6),
+                Text(
+                  'Version 1.0.0',
+                  style: GoogleFonts.inter(
+                    fontSize: 13,
+                    color: palette.textSecondary,
+                  ),
                 ),
-              ),
-              const SizedBox(height: 6),
-              Text(
-                'Version 1.0.0',
-                style: GoogleFonts.inter(
-                  fontSize: 13,
-                  color: AppColors.textSecondary,
+                const SizedBox(height: 12),
+                Text(
+                  'Your premium online shopping experience.\nShop smart. Shop easy.',
+                  textAlign: TextAlign.center,
+                  style: GoogleFonts.inter(
+                    fontSize: 13,
+                    color: palette.textSecondary,
+                    height: 1.5,
+                  ),
                 ),
-              ),
-              const SizedBox(height: 12),
-              Text(
-                'Your premium online shopping experience.\nShop smart. Shop easy.',
-                textAlign: TextAlign.center,
-                style: GoogleFonts.inter(
-                  fontSize: 13,
-                  color: AppColors.textSecondary,
-                  height: 1.5,
+                const SizedBox(height: 24),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: () => Navigator.pop(ctx),
+                    child: const Text('Got it'),
+                  ),
                 ),
-              ),
-              const SizedBox(height: 24),
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: () => Navigator.pop(ctx),
-                  child: const Text('Got it'),
-                ),
-              ),
-            ],
+              ],
+            ),
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 }
@@ -627,6 +623,8 @@ class _DrawerHeader extends StatelessWidget {
 // ──────────────────────────────────────────────
 // Drawer Menu Item
 // ──────────────────────────────────────────────
+
+
 class _DrawerMenuItem extends StatelessWidget {
   final IconData icon;
   final String label;
@@ -635,7 +633,6 @@ class _DrawerMenuItem extends StatelessWidget {
   final int badgeCount;
   final Color iconBgColor;
   final Color iconColor;
-  final bool isDark;
 
   const _DrawerMenuItem({
     required this.icon,
@@ -645,11 +642,11 @@ class _DrawerMenuItem extends StatelessWidget {
     this.badgeCount = 0,
     required this.iconBgColor,
     required this.iconColor,
-    this.isDark = false,
   });
 
   @override
   Widget build(BuildContext context) {
+    final palette = context.palette;
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 1.5),
       child: Material(
@@ -680,7 +677,7 @@ class _DrawerMenuItem extends StatelessWidget {
                       Text(
                         label,
                         style: GoogleFonts.inter(
-                          color: isDark ? Colors.white : AppColors.textPrimary,
+                          color: palette.textPrimary,
                           fontSize: 14,
                           fontWeight: FontWeight.w500,
                         ),
@@ -690,9 +687,9 @@ class _DrawerMenuItem extends StatelessWidget {
                         Text(
                           subtitle!,
                           style: GoogleFonts.inter(
-                            color: isDark
-                                ? const Color(0xFF94A3B8)
-                                : AppColors.textHint,
+                            color: palette.isDark
+                                ? palette.textSecondary
+                                : palette.textHint,
                             fontSize: 11.5,
                             fontWeight: FontWeight.w400,
                           ),
@@ -708,13 +705,20 @@ class _DrawerMenuItem extends StatelessWidget {
                       vertical: 3,
                     ),
                     decoration: BoxDecoration(
-                      gradient: AppColors.accentGradient,
+                      gradient: LinearGradient(
+                        colors: [
+                          palette.accent,
+                          palette.accent.withValues(alpha: 0.8),
+                        ],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Text(
                       badgeCount > 99 ? '99+' : '$badgeCount',
                       style: GoogleFonts.inter(
-                        color: Colors.white,
+                        color: palette.onAccent,
                         fontSize: 11,
                         fontWeight: FontWeight.w700,
                       ),
@@ -724,7 +728,7 @@ class _DrawerMenuItem extends StatelessWidget {
                 const SizedBox(width: 4),
                 Icon(
                   Icons.chevron_right_rounded,
-                  color: AppColors.textHint.withValues(alpha: 0.4),
+                  color: palette.textHint.withValues(alpha: 0.4),
                   size: 20,
                 ),
               ],
@@ -741,17 +745,18 @@ class _DrawerMenuItem extends StatelessWidget {
 // ──────────────────────────────────────────────
 class _DrawerSectionTitle extends StatelessWidget {
   final String title;
-  final Color? textColor;
-  const _DrawerSectionTitle({required this.title, this.textColor});
+  const _DrawerSectionTitle({required this.title});
 
   @override
   Widget build(BuildContext context) {
+    final palette = context.palette;
     return Padding(
       padding: const EdgeInsets.only(left: 14, top: 6, bottom: 2),
       child: Text(
         title.toUpperCase(),
         style: GoogleFonts.inter(
-          color: textColor ?? AppColors.textHint,
+          // textHint is too faint on the dark drawer, so step up one shade.
+          color: palette.isDark ? palette.textSecondary : palette.textHint,
           fontSize: 11,
           fontWeight: FontWeight.w700,
           letterSpacing: 1.2,
@@ -765,15 +770,14 @@ class _DrawerSectionTitle extends StatelessWidget {
 // Divider
 // ──────────────────────────────────────────────
 class _DrawerDivider extends StatelessWidget {
-  final bool isDark;
-  const _DrawerDivider({this.isDark = false});
+  const _DrawerDivider();
 
   @override
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
       child: Divider(
-        color: isDark ? const Color(0xFF334155) : AppColors.divider,
+        color: context.palette.divider,
         height: 1,
       ),
     );
@@ -798,6 +802,7 @@ class _LanguageOption extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = context.palette;
     return ListTile(
       contentPadding: const EdgeInsets.symmetric(horizontal: 4),
       leading: ClipRRect(
@@ -806,8 +811,8 @@ class _LanguageOption extends StatelessWidget {
       ),
       title: Text(label, style: GoogleFonts.inter(fontWeight: FontWeight.w600)),
       trailing: selected
-          ? const Icon(Icons.check_circle_rounded, color: AppColors.primary)
-          : const Icon(Icons.radio_button_unchecked_rounded, color: AppColors.textSecondary),
+          ? Icon(Icons.check_circle_rounded, color: palette.primary)
+          : Icon(Icons.radio_button_unchecked_rounded, color: palette.textSecondary),
       onTap: onTap,
     );
   }
@@ -815,7 +820,6 @@ class _LanguageOption extends StatelessWidget {
 
 class _DrawerFooter extends StatelessWidget {
   final bool isAuth;
-  final bool isDark;
   final String loginLabel;
   final String logoutLabel;
   final Color primaryColor;
@@ -824,7 +828,6 @@ class _DrawerFooter extends StatelessWidget {
 
   const _DrawerFooter({
     required this.isAuth,
-    this.isDark = false,
     required this.loginLabel,
     required this.logoutLabel,
     required this.primaryColor,
@@ -834,6 +837,7 @@ class _DrawerFooter extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = context.palette;
     return Container(
       padding: EdgeInsets.only(
         left: 20,
@@ -842,10 +846,10 @@ class _DrawerFooter extends StatelessWidget {
         bottom: MediaQuery.of(context).padding.bottom + 16,
       ),
       decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF1E293B) : AppColors.surface,
+        color: palette.surface,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: isDark ? 0.25 : 0.04),
+            color: Colors.black.withValues(alpha: palette.isDark ? 0.25 : 0.04),
             blurRadius: 10,
             offset: const Offset(0, -2),
           ),
@@ -924,122 +928,200 @@ class _ThemeStyleSelector extends StatelessWidget {
     required this.onSelect,
   });
 
+  static const double _spacing = 10;
+
   @override
   Widget build(BuildContext context) {
-    final isDark = currentStyle.isDark;
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        // Three per row on phones, four once the sheet is wide (tablets).
+        final columns = constraints.maxWidth >= 520 ? 4 : 3;
+        final tileWidth =
+            ((constraints.maxWidth - _spacing * (columns - 1)) / columns)
+                .floorToDouble();
+
+        return Wrap(
+          spacing: _spacing,
+          runSpacing: _spacing,
+          children: [
+            for (final style in AppThemeStyle.values)
+              SizedBox(
+                width: tileWidth,
+                child: _ThemeStyleTile(
+                  style: style,
+                  selected: style == currentStyle,
+                  onTap: () => onSelect(style),
+                ),
+              ),
+          ],
+        );
+      },
+    );
+  }
+}
+
+class _ThemeStyleTile extends StatelessWidget {
+  final AppThemeStyle style;
+  final bool selected;
+  final VoidCallback onTap;
+
+  const _ThemeStyleTile({
+    required this.style,
+    required this.selected,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final palette = context.palette;
+
+    return Semantics(
+      selected: selected,
+      child: Material(
+        color: selected
+            ? style.primary.withValues(alpha: palette.isDark ? 0.16 : 0.06)
+            : palette.surface,
+        clipBehavior: Clip.antiAlias,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+          side: BorderSide(
+            color: selected ? style.primary : palette.divider,
+            width: selected ? 2 : 1,
+          ),
+        ),
+        child: InkWell(
+          onTap: onTap,
+          splashColor: style.primary.withValues(alpha: 0.12),
+          highlightColor: style.primary.withValues(alpha: 0.06),
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(8, 8, 8, 10),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                _ThemeSwatch(style: style, selected: selected),
+                const SizedBox(height: 8),
+                Center(
+                  child: FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: Text(
+                      style.name,
+                      maxLines: 1,
+                      style: GoogleFonts.inter(
+                        fontSize: 12,
+                        fontWeight:
+                            selected ? FontWeight.w700 : FontWeight.w600,
+                        color: selected
+                            ? palette.textPrimary
+                            : palette.textSecondary,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Mini preview of a theme style: its header gradient with the brand and
+/// accent colors as dots, so even near-black styles stay recognizable.
+class _ThemeSwatch extends StatelessWidget {
+  final AppThemeStyle style;
+  final bool selected;
+
+  const _ThemeSwatch({required this.style, required this.selected});
+
+  @override
+  Widget build(BuildContext context) {
+    final palette = context.palette;
 
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 4),
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      height: 54,
       decoration: BoxDecoration(
-        color: isDark
-            ? const Color(0xFF334155).withValues(alpha: 0.5)
-            : Colors.white,
-        borderRadius: BorderRadius.circular(16),
+        gradient: style.headerGradient,
+        borderRadius: BorderRadius.circular(11),
+        // Hairline so dark swatches don't melt into a dark sheet.
         border: Border.all(
-          color: isDark
-              ? const Color(0xFF475569)
-              : currentStyle.primary.withValues(alpha: 0.18),
-          width: 1.2,
+          color: palette.isDark
+              ? Colors.white.withValues(alpha: 0.14)
+              : Colors.black.withValues(alpha: 0.04),
         ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.03),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
+      ),
+      child: Stack(
+        children: [
+          Positioned(
+            left: 8,
+            bottom: 8,
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                _SwatchDot(color: style.primary),
+                const SizedBox(width: 4),
+                _SwatchDot(color: style.accent),
+              ],
+            ),
           ),
+          if (style.isDark)
+            Positioned(
+              left: 7,
+              top: 6,
+              child: Icon(
+                Icons.dark_mode_rounded,
+                size: 14,
+                color: Colors.white.withValues(alpha: 0.85),
+              ),
+            ),
+          if (selected)
+            Positioned(
+              right: 6,
+              top: 6,
+              child: Container(
+                width: 20,
+                height: 20,
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.18),
+                      blurRadius: 4,
+                      offset: const Offset(0, 1),
+                    ),
+                  ],
+                ),
+                child: Icon(
+                  Icons.check_rounded,
+                  size: 14,
+                  color: style.primary,
+                ),
+              ),
+            ),
         ],
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(
-                Icons.palette_rounded,
-                size: 17,
-                color: currentStyle.primary,
-              ),
-              const SizedBox(width: 8),
-              Text(
-                'Color Palette',
-                style: GoogleFonts.inter(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
-                  color: isDark ? Colors.white : AppColors.textPrimary,
-                ),
-              ),
-              const Spacer(),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                decoration: BoxDecoration(
-                  color: currentStyle.primary.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Text(
-                  currentStyle.name,
-                  style: GoogleFonts.inter(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w700,
-                    color: currentStyle.primary,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          Wrap(
-            spacing: 10,
-            runSpacing: 10,
-            children: AppThemeStyle.values.map((style) {
-              final isSelected = style == currentStyle;
-              return GestureDetector(
-                onTap: () => onSelect(style),
-                behavior: HitTestBehavior.opaque,
-                child: Tooltip(
-                  message: style.name,
-                  child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 250),
-                    curve: Curves.easeOutCubic,
-                    width: 38,
-                    height: 38,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      gradient: style.headerGradient,
-                      border: Border.all(
-                        color: isSelected ? Colors.white : Colors.transparent,
-                        width: 2.5,
-                      ),
-                      boxShadow: [
-                        if (isSelected)
-                          BoxShadow(
-                            color: style.primary.withValues(alpha: 0.5),
-                            blurRadius: 8,
-                            spreadRadius: 1.5,
-                          )
-                        else
-                          BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.08),
-                            blurRadius: 4,
-                            offset: const Offset(0, 2),
-                          ),
-                      ],
-                    ),
-                    child: Center(
-                      child: isSelected
-                          ? const Icon(
-                              Icons.check_rounded,
-                              size: 20,
-                              color: Colors.white,
-                            )
-                          : null,
-                    ),
-                  ),
-                ),
-              );
-            }).toList(),
-          ),
-        ],
+    );
+  }
+}
+
+class _SwatchDot extends StatelessWidget {
+  final Color color;
+
+  const _SwatchDot({required this.color});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 12,
+      height: 12,
+      decoration: BoxDecoration(
+        color: color,
+        shape: BoxShape.circle,
+        border: Border.all(
+          color: Colors.white.withValues(alpha: 0.9),
+          width: 1.5,
+        ),
       ),
     );
   }

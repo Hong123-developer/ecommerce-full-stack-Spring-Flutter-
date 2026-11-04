@@ -2697,6 +2697,101 @@
             },
             "description": "Updates order lifecycle status (e.g. PROCESSING, SHIPPED, DELIVERED, CANCELLED)."
           }
+        },
+        {
+          "name": "4. Update Shipment (Tracking & Courier)",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"trackingNumber\": \"JT8800123456\",\n  \"carrierName\": \"J&T Express\",\n  \"courierName\": \"Sokha\",\n  \"courierPhone\": \"+855 12 345 678\",\n  \"estimatedDeliveryAt\": \"2026-11-03T16:30:00\",\n  \"stage\": \"OUT_FOR_DELIVERY\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/admin/orders/{{orderId}}/shipment",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "orders",
+                "{{orderId}}",
+                "shipment"
+              ]
+            },
+            "description": "Full replacement of the courier details: every field is optional, and an omitted or blank one is cleared (strings are trimmed). stage is PICKED_UP, IN_TRANSIT or OUT_FOR_DELIVERY and may only be set while the order is SHIPPED and is not a pickup order (400 otherwise). Moving to a new stage adds a timeline step and notifies the customer; re-sending the same stage does not. courierPhone must match ^[+0-9 ()-]{6,30}$. Responds with the customer's tracking view (same payload as GET /api/v1/orders/{id}/tracking)."
+          }
+        },
+        {
+          "name": "5. Update Courier Location",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"latitude\": 11.5612,\n  \"longitude\": 104.9165\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/admin/orders/{{orderId}}/shipment/location",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "orders",
+                "{{orderId}}",
+                "shipment",
+                "location"
+              ]
+            },
+            "description": "Records the courier's current position for the customer's live map; the server stamps the time (courier.locationUpdatedAt). Both coordinates are required, latitude in [-90, 90] and longitude in [-180, 180]. Only while the order is SHIPPED (400 otherwise). Responds with the customer's tracking view."
+          }
         }
       ]
     },

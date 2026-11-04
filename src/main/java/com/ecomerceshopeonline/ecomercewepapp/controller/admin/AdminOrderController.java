@@ -1,9 +1,12 @@
 package com.ecomerceshopeonline.ecomercewepapp.controller.admin;
 
+import com.ecomerceshopeonline.ecomercewepapp.dto.request.CourierLocationRequest;
 import com.ecomerceshopeonline.ecomercewepapp.dto.request.UpdateOrderStatusRequest;
+import com.ecomerceshopeonline.ecomercewepapp.dto.request.UpdateShipmentRequest;
 import com.ecomerceshopeonline.ecomercewepapp.dto.response.ApiResponse;
 import com.ecomerceshopeonline.ecomercewepapp.dto.response.OrderResponse;
 import com.ecomerceshopeonline.ecomercewepapp.dto.response.OrderSummaryResponse;
+import com.ecomerceshopeonline.ecomercewepapp.dto.response.OrderTrackingResponse;
 import com.ecomerceshopeonline.ecomercewepapp.dto.response.PageResponse;
 import com.ecomerceshopeonline.ecomercewepapp.entity.enums.OrderStatus;
 import com.ecomerceshopeonline.ecomercewepapp.service.OrderService;
@@ -43,5 +46,23 @@ public class AdminOrderController {
             @PathVariable Long id, @Valid @RequestBody UpdateOrderStatusRequest request) {
         return ApiResponse.ok("Order status updated",
                 orderService.adminUpdateStatus(id, request.status()));
+    }
+
+    /**
+     * Full replacement of the courier details (tracking number, carrier, courier, estimated
+     * arrival, stage). Answers with the customer's tracking view of the order.
+     */
+    @PutMapping("/{id}/shipment")
+    public ApiResponse<OrderTrackingResponse> updateShipment(
+            @PathVariable Long id, @Valid @RequestBody UpdateShipmentRequest request) {
+        return ApiResponse.ok("Shipment updated", orderService.adminUpdateShipment(id, request));
+    }
+
+    /** The courier's current position, for the customer's live map. */
+    @PutMapping("/{id}/shipment/location")
+    public ApiResponse<OrderTrackingResponse> updateCourierLocation(
+            @PathVariable Long id, @Valid @RequestBody CourierLocationRequest request) {
+        return ApiResponse.ok("Courier location updated",
+                orderService.adminUpdateCourierLocation(id, request));
     }
 }

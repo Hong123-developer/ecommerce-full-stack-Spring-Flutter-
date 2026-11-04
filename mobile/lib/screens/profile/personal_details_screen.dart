@@ -45,12 +45,13 @@ class _PersonalDetailsScreenState extends ConsumerState<PersonalDetailsScreen> {
   }
 
   Future<void> _choosePhoto() async {
+    final palette = context.palette;
     // Camera capture isn't available on web
     final source = kIsWeb
         ? ImageSource.gallery
         : await showModalBottomSheet<ImageSource>(
             context: context,
-            backgroundColor: AppColors.surface,
+            backgroundColor: palette.surface,
             shape: const RoundedRectangleBorder(
               borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
             ),
@@ -162,6 +163,9 @@ class _PersonalDetailsScreenState extends ConsumerState<PersonalDetailsScreen> {
         ? MemoryImage(_pickedBytes!)
         : (savedImage != null && savedImage.isNotEmpty ? CachedNetworkImageProvider(savedImage) : null);
     final name = _nameCtrl.text.trim();
+    final palette = context.palette;
+    // primary is too dim on the tinted avatar in dark mode.
+    final avatarInk = palette.isDark ? palette.primaryLight : palette.primary;
 
     return AuthStepScaffold(
       title: 'Personal Details',
@@ -188,19 +192,19 @@ class _PersonalDetailsScreenState extends ConsumerState<PersonalDetailsScreen> {
                   children: [
                     CircleAvatar(
                       radius: 52,
-                      backgroundColor: AppColors.primaryLight.withValues(alpha: 0.25),
+                      backgroundColor: palette.primaryLight.withValues(alpha: 0.25),
                       backgroundImage: avatarImage,
                       child: avatarImage == null
                           ? (name.isNotEmpty
                               ? Text(
                                   name[0].toUpperCase(),
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                     fontSize: 36,
                                     fontWeight: FontWeight.w700,
-                                    color: AppColors.primary,
+                                    color: avatarInk,
                                   ),
                                 )
-                              : const Icon(Icons.person_rounded, size: 52, color: AppColors.primary))
+                              : Icon(Icons.person_rounded, size: 52, color: avatarInk))
                           : null,
                     ),
                     Positioned(
@@ -210,9 +214,9 @@ class _PersonalDetailsScreenState extends ConsumerState<PersonalDetailsScreen> {
                         width: 34,
                         height: 34,
                         decoration: BoxDecoration(
-                          gradient: AppColors.primaryGradient,
+                          gradient: palette.primaryGradient,
                           shape: BoxShape.circle,
-                          border: Border.all(color: Colors.white, width: 3),
+                          border: Border.all(color: palette.surface, width: 3),
                         ),
                         child: const Icon(Icons.photo_camera_rounded, size: 16, color: Colors.white),
                       ),
@@ -247,13 +251,13 @@ class _PersonalDetailsScreenState extends ConsumerState<PersonalDetailsScreen> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const Icon(Icons.email_outlined, size: 16, color: AppColors.textHint),
+                  Icon(Icons.email_outlined, size: 16, color: palette.textHint),
                   const SizedBox(width: 6),
                   Flexible(
                     child: Text(
                       user.email,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(fontSize: 13, color: AppColors.textSecondary),
+                      style: TextStyle(fontSize: 13, color: palette.textSecondary),
                     ),
                   ),
                 ],
